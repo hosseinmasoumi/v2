@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from core.views import HomeView
 from core.dashboard_fixes import FixedDashboardView
+from experiment.approval_fix import experiment_approval_create
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -9,6 +10,7 @@ urlpatterns = [
     path('grappelli/', include('grappelli.urls')),
     path('admin/', admin.site.urls),
     path('dashboard/', FixedDashboardView.as_view(), name='dashboard'),
+    path('experiment/experiment-approval/create/<int:response_id>/', experiment_approval_create, name='fixed_experiment_approval_create'),
     path('', include('core.urls')),
     path("project/",include("project.urls")),
     path('auth/experiment/', include('experiment.urls', namespace='experiment')),
