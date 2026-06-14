@@ -1,0 +1,8 @@
+Dashboard chart test notes
+
+Experiment charts are split into three groups: embankment, concrete, and asphalt.
+
+Embankment statuses: acceptable, recompact, retest, in progress, under test.
+Concrete and asphalt statuses: acceptable, penalty, demolition, in progress, under test.
+
+Volume charts compare accepted executed volume against total planned layer volume for the same work group.
