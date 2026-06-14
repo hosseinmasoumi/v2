@@ -6,3 +6,8 @@ Embankment statuses: acceptable, recompact, retest, in progress, under test.
 Concrete and asphalt statuses: acceptable, penalty, demolition, in progress, under test.
 
 Volume charts compare accepted executed volume against total planned layer volume for the same work group.
+
+Kilometer validation notes
+
+Upper layer requests are checked only against lower-layer results in the same overlapping kilometer interval.
+Km 10.000 to 11.000 data must not affect km 2.000 to 3.000.
