@@ -1,0 +1,554 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %} {# Changed to load widget_tweaks #}
+
+{% block title %}ثبت پاسخ آزمایش{% endblock %}
+{% block main %}
+<div class="container py-4">
+    <div class="page-toolbar">
+        <button type="button" class="btn btn-outline-secondary rounded-pill page-back-btn" onclick="history.back()">
+            <i class="bi bi-arrow-right me-2"></i>بازگشت
+        </button>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h3 class="card-title">ثبت پاسخ آزمایش</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <h5 class="fw-bold mb-2"><i class="fas fa-clipboard-list me-2"></i>اطلاعات درخواست</h5>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <span class="text-muted small">شماره درخواست</span>
+                                <div class="fw-bold">{{ experiment_request.order }}</div>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted small">پروژه</span>
+                                <div class="fw-bold">{{ project.name }}</div>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted small">لایه</span>
+                                <div class="fw-bold">{{ layer_display_name }} <span class="badge bg-light text-dark">ترتیب {{ layer.order_from_top }}</span></div>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted small">درخواست‌کننده</span>
+                                <div class="fw-bold">{{ request_user.get_full_name|default:request_user.username }}</div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-3">
+                                <span class="text-muted small">تاریخ درخواست</span>
+                                <div>{{ experiment_request.request_date|date:"Y/m/d" }}</div>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted small">بازه‌های کیلومتری</span>
+                                <div>
+                                    {% if kilometer_ranges %}
+                                        {% for km in kilometer_ranges %}
+                                            <span class="badge bg-success-light text-dark me-1 mb-1">{{ km.start_kilometer }} تا {{ km.end_kilometer }}</span>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">ثبت نشده</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted small">انواع آزمایشات</span>
+                                <div>
+                                    {% for t in experiment_types %}
+                                        <span class="badge bg-primary-light text-dark me-1 mb-1">{{ t.name }}</span>
+                                    {% empty %}
+                                        <span class="text-muted">ثبت نشده</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted small">پاسخ‌دهنده</span>
+                                <div class="fw-bold text-success">{{ response_user.get_full_name|default:response_user.username }}</div>
+                            </div>
+                        </div>
+                        {% if experiment_subtypes %}
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <span class="text-muted small">آزمایشات</span>
+                                <div>
+                                    {% for st in experiment_subtypes %}
+                                        <span class="badge bg-info-light text-dark me-1 mb-1">{{ st.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if request_files %}
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <span class="text-muted small">فایل‌های پیوست درخواست</span>
+                                <div class="d-flex flex-wrap gap-2 mt-1">
+                                    {% for file in request_files %}
+                                        <a href="{{ file.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-download me-1"></i>دانلود
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>تاریخ پاسخ:</label>
+                                    {{ form.response_date|add_class:"form-control jalali_date-input" }}
+                                    {% if form.response_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.response_date.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>فایل پاسخ:</label>
+                                    {{ form.response_file|add_class:"form-control-file" }}
+                                    {% if form.response_file.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.response_file.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h5 class="fw-bold mb-3"><i class="fas fa-vial me-2"></i>نتایج آزمایش</h5>
+                                <div class="alert alert-warning small mb-3">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    فیلدهای زیر بر اساس آزمایش انتخاب شده در درخواست نمایش داده می‌شوند.
+                                </div>
+                            </div>
+                            <!-- فیلدهای تراکم نسبی (2 عدد: تراکم + ضخامت) -->
+                            {% if is_relative_density %}
+                            <div class="col-md-4">
+                                <label class="form-label">نتیجه تراکم (%)</label>
+                                {{ form.density_result|add_class:"form-control" }}
+                                {% if form.density_result.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.density_result.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">نتیجه ضخامت (سانتی‌متر)</label>
+                                {{ form.thickness_result|add_class:"form-control" }}
+                                {% if form.thickness_result.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.thickness_result.errors }}</div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            <!-- فیلدهای مقاومت فشاری بتن (3 عدد) -->
+                            <div class="col-md-4 result-field" data-experiment-types="مقاومت فشاری بتن و ملات" style="display: none;">
+                                <label class="form-label">مقاومت ۱ (کیلوگرم بر سانتی‌متر مربع)</label>
+                                {{ form.strength_result1|add_class:"form-control strength-input" }}
+                                {% if form.strength_result1.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.strength_result1.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 result-field" data-experiment-types="مقاومت فشاری بتن و ملات" style="display: none;">
+                                <label class="form-label">مقاومت ۲ (کیلوگرم بر سانتی‌متر مربع)</label>
+                                {{ form.strength_result2|add_class:"form-control strength-input" }}
+                                {% if form.strength_result2.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.strength_result2.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 result-field" data-experiment-types="مقاومت فشاری بتن و ملات" style="display: none;">
+                                <label class="form-label">مقاومت ۳ (کیلوگرم بر سانتی‌متر مربع)</label>
+                                {{ form.strength_result3|add_class:"form-control strength-input" }}
+                                {% if form.strength_result3.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.strength_result3.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <!-- فیلد میانگین مقاومت (فقط خواندنی) -->
+                            <div class="col-md-4 result-field" data-experiment-types="مقاومت فشاری بتن و ملات" style="display: none;">
+                                <label class="form-label">میانگین مقاومت (کیلوگرم بر سانتی‌متر مربع)</label>
+                                <input type="text" id="strength_average" class="form-control" readonly style="background-color: #e9ecef;">
+                                <small class="form-text text-muted">این مقدار به صورت خودکار از میانگین سه مقاومت محاسبه می‌شود</small>
+                            </div>
+                            
+                            <!-- فیلدهای آسفالت (8 فیلد) -->
+                            {% if is_asphalt and asphalt_formset %}
+                            <div class="col-12 result-field" data-experiment-types="آسفالت" style="display: none;">
+                                <div class="card mb-4 shadow">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h5 class="mb-0"><i class="fas fa-road me-2"></i>نتایج آزمایش آسفالت</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        {{ asphalt_formset.management_form }}
+                                        {% for form in asphalt_formset %}
+                                        <div class="asphalt-form-row border rounded p-3 mb-3 bg-light">
+                                            <div class="row">
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label">نوع لایه</label>
+                                                    {{ form.layer_type|add_class:"form-select" }}
+                                                    {% if form.layer_type.errors %}
+                                                        <div class="invalid-feedback d-block">{{ form.layer_type.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label">درصد قیر نسبت به مخلوط آسفالت</label>
+                                                    {{ form.bitumen_percentage|add_class:"form-control" }}
+                                                    <small class="form-text text-muted">(طرح اختلاط) ۱۰٪+ >= X >= (طرح اختلاط) ۱۰٪-</small>
+                                                    {% if form.bitumen_percentage.errors %}
+                                                        <div class="invalid-feedback d-block">{{ form.bitumen_percentage.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label">درصد شکستگی</label>
+                                                    {{ form.fracture_percentage|add_class:"form-control" }}
+                                                    <small class="form-text text-muted">باید >= 80 باشد</small>
+                                                    {% if form.fracture_percentage.errors %}
+                                                        <div class="invalid-feedback d-block">{{ form.fracture_percentage.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label">درجه حرارت آسفالت</label>
+                                                    {{ form.temperature|add_class:"form-control" }}
+                                                    <small class="form-text text-muted">163 >= X >= 136</small>
+                                                    {% if form.temperature.errors %}
+                                                        <div class="invalid-feedback d-block">{{ form.temperature.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label">درصد فضای خالی</label>
+                                                    {{ form.air_void_percentage|add_class:"form-control" }}
+                                                    <small class="form-text text-muted">بیندر: 6 >= X >= 3, توپکا: 5 >= X >= 3</small>
+                                                    {% if form.air_void_percentage.errors %}
+                                                        <div class="invalid-feedback d-block">{{ form.air_void_percentage.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label">درصد حجمی فضای خالی (VMA)</label>
+                                                    {{ form.vma_percentage|add_class:"form-control" }}
+                                                    <small class="form-text text-muted">15 >= X >= 13</small>
+                                                    {% if form.vma_percentage.errors %}
+                                                        <div class="invalid-feedback d-block">{{ form.vma_percentage.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label">درصد فضای خالی پرشده با قیر (VFA)</label>
+                                                    {{ form.vfa_percentage|add_class:"form-control" }}
+                                                    <small class="form-text text-muted">75 >= X >= 60</small>
+                                                    {% if form.vfa_percentage.errors %}
+                                                        <div class="invalid-feedback d-block">{{ form.vfa_percentage.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-md-3 mb-3">
+                                                    <label class="form-label">درصد فیلر به قیر</label>
+                                                    {{ form.filler_to_bitumen_ratio|add_class:"form-control" }}
+                                                    <small class="form-text text-muted">1.2 >= X >= 0.6</small>
+                                                    {% if form.filler_to_bitumen_ratio.errors %}
+                                                        <div class="invalid-feedback d-block">{{ form.filler_to_bitumen_ratio.errors }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                                            {% if form.DELETE %}
+                                                <div class="form-check">
+                                                    {{ form.DELETE|add_class:"form-check-input" }}
+                                                    <label class="form-check-label">حذف</label>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        {% endfor %}
+                                        <div class="alert alert-info small">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            <strong>نکته:</strong> برای ثبت دانه‌بندی (الک‌ها)، پس از ذخیره این فرم، می‌توانید در صفحه جزئیات پاسخ، دانه‌بندی را اضافه کنید.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label>توضیحات:</label>
+                                    {# Applying form-control class to description field #}
+                                    {{ form.description|add_class:"form-control" }}
+                                    {% if form.description.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.description.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <!-- فرم‌ست کیلومتراژ -->
+                                <div class="card mb-4 shadow kilometer-formset-card">
+                                    <div class="card-header bg-success text-white d-flex align-items-center justify-content-between">
+                                        <span><i class="fas fa-ruler-horizontal me-1"></i> بازه‌های کیلومتراژ</span>
+                                        <button type="button" class="btn btn-light btn-sm fw-bold" id="add-kilometer"><i class="fas fa-plus-circle me-1 text-success"></i>افزودن بازه</button>
+                                    </div>
+                                    <div class="card-body pt-3 pb-2" id="kilometer-formset">
+                                        {% if kilometer_formset.non_form_errors %}
+                                            <div class="alert alert-danger py-2">
+                                                {% for error in kilometer_formset.non_form_errors %}
+                                                    <div>{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        {{ kilometer_formset.management_form }}
+                                        {% for form in kilometer_formset %}
+                                            <div class="row kilometer-form-row align-items-end mb-2 border rounded-3 p-2 position-relative animate__animated animate__fadeIn bg-light">
+                                                <div class="col-5">
+                                                    <label class="form-label small">شروع (کیلومتر)</label>
+                                                    {% render_field form.start_kilometer class="form-control" placeholder="شروع" %}
+                                                </div>
+                                                <div class="col-5">
+                                                    <label class="form-label small">پایان (کیلومتر)</label>
+                                                    {% render_field form.end_kilometer class="form-control" placeholder="پایان" %}
+                                                </div>
+                                                <div class="col-2 d-flex align-items-end">
+                                                    <button type="button" class="btn btn-outline-danger remove-kilometer w-100"><i class="fas fa-trash"></i></button>
+                                                </div>
+                                                {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="card-footer bg-white border-0 pt-2 pb-2">
+                                        <div class="form-text text-muted">مثال: 2.000 تا 2.500</div>
+                                    </div>
+                                </div>
+                                <!-- template مخفی برای افزودن بازه جدید -->
+                                <template id="kilometer-form-template">
+                                    <div class="row kilometer-form-row align-items-end mb-2 border rounded-3 p-2 position-relative animate__animated animate__fadeIn bg-light">
+                                        <div class="col-5">
+                                            <label class="form-label small">شروع (کیلومتر)</label>
+                                            <input type="text" name="__prefix__-start_kilometer" class="form-control" placeholder="شروع" />
+                                        </div>
+                                        <div class="col-5">
+                                            <label class="form-label small">پایان (کیلومتر)</label>
+                                            <input type="text" name="__prefix__-end_kilometer" class="form-control" placeholder="پایان" />
+                                        </div>
+                                        <div class="col-2 d-flex align-items-end">
+                                            <button type="button" class="btn btn-outline-danger remove-kilometer w-100"><i class="fas fa-trash"></i></button>
+                                        </div>
+                                    </div>
+                                </template>
+                                <!-- فرم‌ست فایل‌ها -->
+                                <div class="card mb-4 shadow file-formset-card">
+                                    <div class="card-header bg-info text-white d-flex align-items-center justify-content-between">
+                                        <span><i class="fas fa-paperclip me-1"></i> فایل‌های پاسخ</span>
+                                        <button type="button" class="btn btn-light btn-sm fw-bold" id="add-file"><i class="fas fa-plus-circle me-1 text-info"></i>افزودن فایل</button>
+                                    </div>
+                                    <div class="card-body pt-3 pb-2" id="file-formset">
+                                        {% if file_formset.non_form_errors %}
+                                            <div class="alert alert-danger py-2">
+                                                {% for error in file_formset.non_form_errors %}
+                                                    <div>{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        {{ file_formset.management_form }}
+                                        {% for form in file_formset %}
+                                            <div class="row file-form-row align-items-end mb-2 border rounded-3 p-2 position-relative animate__animated animate__fadeIn bg-light">
+                                                <div class="col-10">
+                                                    <label class="form-label small">فایل</label>
+                                                    {% render_field form.file class="form-control" %}
+                                                </div>
+                                                <div class="col-2 d-flex align-items-end">
+                                                    <button type="button" class="btn btn-outline-danger remove-file w-100"><i class="fas fa-trash"></i></button>
+                                                </div>
+                                                {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <template id="file-form-template">
+                                    <div class="row file-form-row align-items-end mb-2 border rounded-3 p-2 position-relative animate__animated animate__fadeIn bg-light">
+                                        <div class="col-10">
+                                            <label class="form-label small">فایل</label>
+                                            <input type="file" name="__prefix__-file" class="form-control" />
+                                        </div>
+                                        <div class="col-2 d-flex align-items-end">
+                                            <button type="button" class="btn btn-outline-danger remove-file w-100"><i class="fas fa-trash"></i></button>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-12 text-center mt-4">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> ذخیره پاسخ
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+    {{ form.media }}
+    <link href="{% static 'css/persian-datepicker.min.css' %}" rel="stylesheet" />
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/persian-date.min.js' %}"></script>
+<script src="{% static 'js/persian-datepicker.min.js' %}"></script>
+<script>
+    $(document).ready(function() {
+        // فعال‌سازی Select2 فقط اگر موجود باشد
+        if (typeof $.fn.select2 !== 'undefined') {
+            $('.select2').select2({
+                theme: 'bootstrap4',
+                width: '100%'
+            });
+        }
+        // فعال‌سازی تقویم شمسی برای تاریخ پاسخ
+        $('.jalali_date-input').persianDatepicker({
+            format: 'YYYY/MM/DD',
+            initialValue: false,
+            autoClose: true,
+            position: 'auto',
+            calendar: {
+                persian: {
+                    locale: 'fa'
+                }
+            }
+        });
+        
+        // نمایش/مخفی کردن فیلدهای پاسخ بر اساس آزمایش
+        var experimentTypes = [
+            {% for t in experiment_types %}
+                "{{ t.name }}"{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        function toggleResultFields() {
+            console.log('=== toggleResultFields called ===');
+            console.log('Experiment Types:', experimentTypes);
+            console.log('Number of result fields:', $('.result-field').length);
+            
+            $('.result-field').each(function(index) {
+                var $field = $(this);
+                var requiredTypes = $field.data('experiment-types');
+                var shouldShow = false;
+                
+                console.log('Field ' + index + ' - Required type:', requiredTypes);
+                
+                // بررسی اینکه آیا آزمایش مورد نیاز در لیست آزمایشات انتخاب شده وجود دارد
+                if (requiredTypes && experimentTypes.length > 0) {
+                    // بررسی دقیق: فقط وقتی که نام نوع آزمایش دقیقاً مطابقت داشته باشد
+                    shouldShow = experimentTypes.some(function(type) {
+                        var cleanType = type.trim();
+                        var cleanRequired = requiredTypes.trim();
+                        
+                        // بررسی دقیق برای "تراکم نسبی" - فقط اگر دقیقاً مطابقت داشته باشد
+                        if (cleanRequired === "تراکم نسبی") {
+                            var matches = cleanType === "تراکم نسبی";
+                            if (matches) {
+                                console.log('✓ تراکم نسبی matched with:', cleanType);
+                            }
+                            return matches;
+                        }
+                        
+                        // بررسی دقیق برای "مقاومت فشاری بتن و ملات"
+                        if (cleanRequired === "مقاومت فشاری بتن و ملات") {
+                            // باید شامل "مقاومت فشاری" و "بتن" باشد
+                            var matches = cleanType === "مقاومت فشاری بتن و ملات" || 
+                                         (cleanType.indexOf("مقاومت فشاری") !== -1 && cleanType.indexOf("بتن") !== -1);
+                            if (matches) {
+                                console.log('✓ مقاومت فشاری matched with:', cleanType);
+                            }
+                            return matches;
+                        }
+                        
+                        // بررسی برای "آسفالت"
+                        if (cleanRequired === "آسفالت") {
+                            var matches = cleanType.indexOf("آسفالت") !== -1;
+                            if (matches) {
+                                console.log('✓ آسفالت matched with:', cleanType);
+                            }
+                            return matches;
+                        }
+                        
+                        // برای سایر موارد، بررسی دقیق - فقط اگر دقیقاً یکسان باشند
+                        var matches = cleanType === cleanRequired;
+                        if (matches) {
+                            console.log('✓ General match:', cleanType, '===', cleanRequired);
+                        }
+                        return matches;
+                    });
+                }
+                
+                console.log('Field ' + index + ' - Should show:', shouldShow);
+                
+                if (shouldShow) {
+                    $field.css('display', 'block');
+                    console.log('Field ' + index + ' - SHOWN');
+                } else {
+                    $field.css('display', 'none');
+                    console.log('Field ' + index + ' - HIDDEN');
+                }
+            });
+            console.log('=== toggleResultFields finished ===');
+        }
+        
+        // اجرای اولیه - بعد از اطمینان از بارگذاری کامل DOM
+        setTimeout(function() {
+            toggleResultFields();
+        }, 100);
+        
+        // محاسبه خودکار میانگین مقاومت
+        function calculateStrengthAverage() {
+            var val1 = $('#id_strength_result1').val();
+            var val2 = $('#id_strength_result2').val();
+            var val3 = $('#id_strength_result3').val();
+            
+            var results = [];
+            // بررسی اینکه آیا مقدار وارد شده است (نه خالی و نه NaN)
+            if (val1 && val1.trim() !== '') {
+                var strength1 = parseFloat(val1);
+                if (!isNaN(strength1)) {
+                    results.push(strength1);
+                }
+            }
+            if (val2 && val2.trim() !== '') {
+                var strength2 = parseFloat(val2);
+                if (!isNaN(strength2)) {
+                    results.push(strength2);
+                }
+            }
+            if (val3 && val3.trim() !== '') {
+                var strength3 = parseFloat(val3);
+                if (!isNaN(strength3)) {
+                    results.push(strength3);
+                }
+            }
+            
+            if (results.length > 0) {
+                var average = results.reduce((a, b) => a + b, 0) / results.length;
+                $('#strength_average').val(average.toFixed(3));
+            } else {
+                $('#strength_average').val('');
+            }
+        }
+        
+        // محاسبه میانگین هنگام تغییر هر یک از فیلدهای مقاومت
+        $('.strength-input').on('input', function() {
+            calculateStrengthAverage();
+        });
+        
+        // محاسبه اولیه در صورت وجود مقادیر
+        calculateStrengthAverage();
+    });
+</script>
+{% endblock %}

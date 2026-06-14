@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}جزئیات درخواست آزمایش{% endblock %}
+
+{% block main %}
+<div class="container-fluid py-4">
+    <div class="page-toolbar">
+        <button type="button" class="btn btn-outline-secondary rounded-pill page-back-btn" onclick="history.back()">
+            <i class="bi bi-arrow-right me-2"></i>بازگشت
+        </button>
+        <div class="page-toolbar-actions">
+            <a href="{% url 'experiment:experiment_request_list' %}" class="btn btn-outline-primary rounded-pill px-4">
+                <i class="bi bi-list"></i> لیست درخواست‌ها
+            </a>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h3 class="card-title">جزئیات درخواست آزمایش</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4>اطلاعات درخواست</h4>
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>شماره درخواست</th>
+                                    <td>{{ experiment_request.order }}</td>
+                                </tr>
+                                <tr>
+                                    <th>پروژه</th>
+                                    <td>{{ experiment_request.project.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>لایه</th>
+                                    <td>{% if experiment_request.layer %}{{ experiment_request.layer.layer_type.name }} ({{ experiment_request.layer.thickness_cm }} سانتی‌متر، ترتیب: {{ experiment_request.layer.order_from_top }}){% else %}-{% endif %}</td>
+                                </tr>
+                                <tr>
+                                    <th>نوع آزمایش</th>
+                                    <td>
+                                        {% for t in experiment_request.experiment_type.all %}
+                                            <span class="badge bg-primary">{{ t.name }}</span>{% if not forloop.last %}، {% endif %}
+                                        {% empty %}-{% endfor %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>آزمایش</th>
+                                    <td>
+                                        {% for st in experiment_request.experiment_subtype.all %}
+                                            <span class="badge bg-info">{{ st.name }}</span>{% if not forloop.last %}، {% endif %}
+                                        {% empty %}-{% endfor %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>محل بتن‌ریزی</th>
+                                    <td>{{ experiment_request.concrete_place.name|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>تاریخ درخواست</th>
+                                    <td>{{ experiment_request.request_date|date:"Y/m/d" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>بازه‌های کیلومتراژ</th>
+                                    <td>
+                                        {% if kilometer_ranges and kilometer_ranges.count %}
+                                            <div class="d-flex flex-column gap-2">
+                                                {% for km in kilometer_ranges %}
+                                                    <div class="border rounded px-3 py-2 bg-light">
+                                                        <div class="fw-bold text-success">{{ km.start_kilometer }} تا {{ km.end_kilometer }}</div>
+                                                        {% if km.description %}
+                                                            <div class="text-muted small mt-1">{{ km.description }}</div>
+                                                        {% endif %}
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}-{% endif %}
+                                    </td>
+                                </tr>
+                                {% if is_relative_density %}
+                                <tr>
+                                    <th>حد تراکم</th>
+                                    <td>{{ experiment_request.target_density|default:"-" }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if is_concrete_strength %}
+                                <tr>
+                                    <th>حد مقاومت فشاری</th>
+                                    <td>{{ experiment_request.target_strength|default:"-" }}</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h4>توضیحات</h4>
+                            <p>{{ experiment_request.description|linebreaks|default:"-" }}</p>
+                            
+                            {% if request_files and request_files.count %}
+                            <h4 class="mt-4">فایل‌های درخواست</h4>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for f in request_files %}
+                                    <a href="{{ f.file.url }}" class="btn btn-outline-primary btn-sm" target="_blank" download>
+                                        <i class="fas fa-download"></i> دانلود فایل
+                                    </a>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- پاسخ‌های آزمایش -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h4>پاسخ‌های آزمایش</h4>
+                            {% if experiment_responses %}
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>تاریخ پاسخ</th>
+                                            {% if is_relative_density %}
+                                            <th>تراکم</th>
+                                            <th>ضخامت</th>
+                                            {% endif %}
+                                            {% if is_concrete_strength %}
+                                            <th>مقاومت 1</th>
+                                            <th>مقاومت 2</th>
+                                            <th>مقاومت 3</th>
+                                            {% endif %}
+                                            <th>عملیات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for response in experiment_responses %}
+                                        <tr>
+                                            <td>{{ response.response_date|date:"Y/m/d" }}</td>
+                                            {% if is_relative_density %}
+                                            <td>{{ response.density_result|default:"-" }}</td>
+                                            <td>{{ response.thickness_result|default:"-" }}</td>
+                                            {% endif %}
+                                            {% if is_concrete_strength %}
+                                            <td>{{ response.strength_result1|default:"-" }}</td>
+                                            <td>{{ response.strength_result2|default:"-" }}</td>
+                                            <td>{{ response.strength_result3|default:"-" }}</td>
+                                            {% endif %}
+                                            <td>
+                                                <a href="{% url 'experiment:experiment_response_detail' response.pk %}" class="btn btn-info btn-sm">
+                                                    <i class="fas fa-eye"></i> جزئیات
+                                                </a>
+                                                <a href="{% url 'experiment:experiment_response_update' response.pk %}" class="btn btn-warning btn-sm">
+                                                    <i class="fas fa-edit"></i> ویرایش
+                                                </a>
+                                                <a href="{% url 'experiment:experiment_response_delete' response.pk %}" class="btn btn-danger btn-sm">
+                                                    <i class="fas fa-trash"></i> حذف
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">
+                                هنوز پاسخی برای این درخواست ثبت نشده است.
+                            </div>
+                            {% endif %}
+
+                            {% if experiment_request.status != 'completed' %}
+                            <div class="mt-3">
+                                <a href="{% url 'experiment:experiment_response_create' experiment_request.pk %}" class="btn btn-success">
+                                    <i class="fas fa-plus"></i> ثبت پاسخ جدید
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- تاییدیه‌های درخواست -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h4>تاییدیه‌های درخواست</h4>
+                            {% if experiment_request.experimentrequestapproval_set.all %}
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>تایید کننده</th>
+                                            <th>وضعیت</th>
+                                            <th>تاریخ تایید</th>
+                                            <th>توضیحات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for approval in experiment_request.experimentrequestapproval_set.all %}
+                                        <tr>
+                                            <td>
+                                                {% if approval.approver %}
+                                                    {{ approval.approver.get_full_name|default:approval.approver.username }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if approval.status == 1 %}
+                                                    <span class="badge bg-success">تایید شده</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">رد شده</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if approval.approval_date %}
+                                                    {{ approval.approval_date|date:"Y/m/d" }}
+                                                {% else %}
+                                                    {{ approval.created_at|date:"Y/m/d H:i" }}
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ approval.description|default:"-" }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">
+                                هنوز تاییدیه‌ای برای این درخواست ثبت نشده است.
+                            </div>
+                            {% endif %}
+
+                            <div class="mt-3">
+                                <a href="{% url 'experiment:experiment_request_approval_create' experiment_request.pk %}" class="btn btn-info">
+                                    <i class="fas fa-check"></i> ثبت تاییدیه
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <a href="{% url 'experiment:experiment_request_update' experiment_request.pk %}" class="btn btn-warning">
+                                <i class="fas fa-edit"></i> ویرایش
+                            </a>
+                            <a href="{% url 'experiment:experiment_request_delete' experiment_request.pk %}" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> حذف
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
+
+{% block extra_js %}{% endblock %} 

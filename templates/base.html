@@ -1,0 +1,334 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" data-bs-theme="light" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no" />
+  <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'css/bootstrap-icons.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+  <style>
+    /* --- Navbar Updated Styles --- */
+    .navbar {
+      background: linear-gradient(135deg, #34495e, #2c3e50);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      padding: 1rem 2rem;
+      transition: background 0.4s ease;
+      font-family: 'Vazirmatn', sans-serif;
+      border-radius: 0 0 15px 15px;
+      direction: rtl;
+    }
+
+    .navbar-brand h4 {
+      color: #ecf0f1;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      margin: 0;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.35);
+      user-select: none;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    .navbar-brand h4:hover {
+      color: #1abc9c;
+    }
+
+    .nav-link {
+      color: #bdc3c7 !important;
+      font-weight: 600;
+      padding: 0.6rem 1.2rem !important;
+      margin: 0 0.3rem;
+      border-radius: 8px;
+      position: relative;
+      transition: color 0.3s ease, background-color 0.3s ease, transform 0.3s ease;
+      font-size: 1rem;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: #ffffff !important;
+      background: #1abc9c;
+      box-shadow: 0 4px 12px rgba(26, 188, 156, 0.5);
+      transform: translateY(-3px);
+      text-shadow: 0 0 5px rgba(255,255,255,0.6);
+    }
+
+    .nav-link i {
+      margin-left: 0.4rem;
+      color: #16a085;
+      transition: transform 0.3s ease, color 0.3s ease;
+    }
+
+    .nav-link:hover i {
+      transform: rotate(20deg) scale(1.2);
+      color: #ffffff;
+    }
+
+    .dropdown-menu {
+      background: #34495e;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(26, 188, 156, 0.3);
+      border: none;
+      padding: 0.8rem 0;
+      min-width: 210px;
+      font-weight: 500;
+    }
+
+    .dropdown-item {
+      color: #ecf0f1;
+      padding: 0.8rem 1.5rem;
+      border-radius: 10px;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      position: relative;
+    }
+
+    .dropdown-item:hover,
+    .dropdown-item.active {
+      background: #1abc9c;
+      color: #ffffff;
+      box-shadow: 0 0 15px #1abc9c;
+      transform: translateX(5px);
+    }
+
+    .dropdown-item i {
+      font-size: 1.15rem;
+      color: #16a085;
+      transition: color 0.3s ease, transform 0.3s ease;
+    }
+
+    .dropdown-item:hover i {
+      color: #ffffff;
+      transform: scale(1.3) rotate(8deg);
+    }
+
+    .dropdown-toggle::after {
+      border-top-color: #1abc9c !important;
+      transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+
+    .dropdown.show .dropdown-toggle::after {
+      transform: rotate(180deg);
+      border-top-color: #16a085 !important;
+    }
+
+    .navbar-toggler {
+      border: none;
+      background: #1abc9c;
+      border-radius: 10px;
+      padding: 0.5rem 0.75rem;
+      transition: background-color 0.3s ease;
+      box-shadow: 0 2px 8px rgba(26, 188, 156, 0.5);
+    }
+
+    .navbar-toggler:hover,
+    .navbar-toggler:focus {
+      background: #16a085;
+      box-shadow: 0 4px 15px rgba(22, 160, 133, 0.7);
+    }
+
+    .navbar-toggler-icon {
+      filter: invert(1);
+    }
+
+    .offcanvas {
+      background: #2c3e50;
+      color: #ecf0f1;
+    }
+
+    .offcanvas-header {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .offcanvas-title {
+      font-weight: 700;
+      color: #1abc9c;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    .btn-close {
+      filter: brightness(0) invert(1);
+    }
+
+    /* پیام‌ها */
+    .alert {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+
+    /* Footer */
+    footer {
+      background: linear-gradient(135deg, #34495e, #2c3e50);
+      color: #bdc3c7;
+      padding: 1.5rem 2rem;
+      text-align: center;
+      font-size: 0.9rem;
+      font-family: 'Vazirmatn', sans-serif;
+      border-top-left-radius: 15px;
+      border-top-right-radius: 15px;
+      margin-top: 3rem;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    footer a {
+      color: #1abc9c;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.3s ease;
+    }
+
+    footer a:hover {
+      color: #16a085;
+      text-decoration: underline;
+    }
+  </style>
+
+  <script src="{% static 'js/jquery.min.js' %}"></script>
+  <script src="{% static 'js/popper.min.js' %}"></script>
+  <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+  {% block head %}
+
+  {% endblock %}
+  <title>
+    {% block title %}
+    <a href="{% url 'home' %}" style="text-decoration: none; color: inherit;">
+      {% if title %}{{ title }} - {% endif %}سامانه کنترل کیفیت
+    </a>
+    {% endblock %}
+  </title>
+</head>
+
+<body class="container-fluid bg-light">
+ <nav class="navbar navbar-expand-lg sticky-top shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'home' %}">
+      <i class="bi bi-kanban-fill text-light fs-3"></i>
+      <span class="fw-bold text-light">سامانه کنترل کیفیت</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#navbarOffcanvas"
+      aria-controls="navbarOffcanvas" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="offcanvas offcanvas-end text-bg-dark" id="navbarOffcanvas" tabindex="-1">
+      <div class="offcanvas-header border-bottom border-secondary">
+        <h5 class="offcanvas-title">منو</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+      </div>
+      <div class="offcanvas-body">
+        <ul class="navbar-nav gap-2 flex-grow-1">
+          <li class="nav-item">
+            <a class="nav-link text-light" href="{% url 'dashboard' %}"><i class="bi bi-speedometer2 me-1"></i> داشبورد</a>
+          </li>
+          {% if request.user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link text-light" href="{% url 'profile' %}"><i class="bi bi-person-circle me-1"></i> پروفایل</a>
+          </li>
+          {% endif %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-light" href="#" data-bs-toggle="dropdown">
+              <i class="bi bi-briefcase me-1"></i> پروژه‌ها
+            </a>
+            <ul class="dropdown-menu dropdown-menu-dark">
+              <li><a class="dropdown-item" href="{% url 'project-list' %}">لیست پروژه‌ها</a></li>
+              <li><a class="dropdown-item" href="{% url 'create-project' %}">ایجاد پروژه جدید</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-light" href="#" data-bs-toggle="dropdown">
+              <i class="bi bi-beaker me-1"></i> آزمایشات
+            </a>
+            <ul class="dropdown-menu dropdown-menu-dark">
+              <li><a class="dropdown-item" href="{% url 'experiment:experiment_request_list' %}">لیست درخواست‌ها</a></li>
+              <li><a class="dropdown-item" href="{% url 'experiment:experiment_request_create' %}">درخواست جدید</a></li>
+              <li><a class="dropdown-item" href="{% url 'experiment:experiment_type_list' %}">انواع آزمایشات</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-light" href="#" data-bs-toggle="dropdown">
+              <i class="bi bi-graph-up me-1"></i> ضریب پرداخت
+            </a>
+            <ul class="dropdown-menu dropdown-menu-dark">
+              <li><a class="dropdown-item" href="{% url 'experiment:dashboard_charts' %}">نمودارهای ضریب پرداخت</a></li>
+              <li><a class="dropdown-item" href="{% url 'experiment:payment_coefficient_list' %}">لیست ضرایب پرداخت</a></li>
+              <li><a class="dropdown-item" href="{% url 'experiment:payment_coefficient_create' %}">افزودن ضریب پرداخت</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-light" href="#" data-bs-toggle="dropdown">
+              <i class="bi bi-percent me-1"></i> کمیسیون کیفیت
+            </a>
+            <ul class="dropdown-menu dropdown-menu-dark">
+              <li><a class="dropdown-item" href="{% url 'experiment:quality_commission_charts' %}">نمودارهای کمیسیون کیفیت</a></li>
+              <li><a class="dropdown-item" href="{% url 'experiment:quality_commission_list' %}">لیست کمیسیون کیفیت</a></li>
+              <li><a class="dropdown-item" href="{% url 'experiment:quality_commission_create' %}">افزودن کمیسیون کیفیت</a></li>
+            </ul>
+          </li>
+          {% if request.user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link text-light" href="{% url 'experiment:notification_list' %}">
+              <i class="bi bi-bell me-1"></i> اعلان‌ها
+              {% if unread_notifications_count > 0 %}
+                <span class="badge bg-danger">{{ unread_notifications_count }}</span>
+              {% endif %}
+            </a>
+          </li>
+          <li class="nav-item">
+            <form method="post" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button class="nav-link text-danger border-0 bg-transparent" type="submit">
+                <i class="bi bi-box-arrow-right me-1"></i> خروج
+              </button>
+            </form>
+          </li>
+          {% else %}
+          <li class="nav-item">
+            <a class="nav-link text-light" href="{% url 'login' %}">
+              <i class="bi bi-box-arrow-in-left me-1"></i> ورود
+            </a>
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
+
+
+  {% if messages %}
+  <div class="container mt-3" style="z-index: 10;">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <main class="py-4">
+    {% block main %}
+    {% endblock %}
+  </main>
+
+  <!-- Footer -->
+{% comment %} <footer class="bg-dark text-light py-4 mt-5">
+  <div class="container text-center">
+    <p class="mb-1">© 2025 سامانه کنترل کیفیت - تمامی حقوق محفوظ است.</p>
+    <p class="small text-secondary">طراحی شده با ❤️ توسط تیم توسعه</p>
+  </div>
+</footer> {% endcomment %}
+
+
+  {% block script %}
+  {% endblock %}
+  {% block extra_js %}{% endblock %}
+</body>
+
+</html>

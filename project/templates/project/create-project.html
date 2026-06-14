@@ -1,0 +1,512 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block head %}
+    {{ form.media }}
+    <link href="{% static 'css/select2.min.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/select2-bootstrap4.min.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/persian-datepicker.min.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/fontawesome.min.css' %}" rel="stylesheet" />
+    <style>
+        .form-section {
+            background: #fff;
+            border-radius: 18px;
+            padding: 24px 24px 12px 24px;
+            margin-bottom: 28px;
+            box-shadow: 0 4px 24px rgba(44, 62, 80, 0.08);
+            border: 1.5px solid #e3e6ea;
+        }
+        .form-section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            padding: 16px 24px;
+            border-radius: 14px 14px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #1976d2 0%, #43a047 100%);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(25, 118, 210, 0.08);
+        }
+        .form-section-title .fa-info-circle {
+            color: #1976d2;
+            background: #fff;
+            border-radius: 50%;
+            padding: 6px;
+            font-size: 1.3em;
+        }
+        .form-section-title .fa-money-bill-wave {
+            color: #fbc02d;
+            background: #fff;
+            border-radius: 50%;
+            padding: 6px;
+            font-size: 1.3em;
+        }
+        .form-section-title .fa-cogs {
+            color: #43a047;
+            background: #fff;
+            border-radius: 50%;
+            padding: 6px;
+            font-size: 1.3em;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #1976d2;
+            margin-bottom: 6px;
+        }
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1.5px solid #e3e6ea;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #1976d2;
+            box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.12);
+        }
+        .submit-btn {
+            padding: 14px 40px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #1976d2 0%, #43a047 100%);
+            border: none;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(25, 118, 210, 0.10);
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .submit-btn:hover {
+            background: linear-gradient(90deg, #43a047 0%, #1976d2 100%);
+            box-shadow: 0 4px 16px rgba(25, 118, 210, 0.16);
+        }
+        .field-error {
+            color: #dc3545;
+            font-size: 0.92rem;
+            margin-top: 5px;
+        }
+        .alert {
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .select2-container--bootstrap4 .select2-selection {
+            border-radius: 8px;
+            min-height: 38px;
+        }
+        .select2-container--bootstrap4 .select2-selection--single {
+            height: 38px;
+            padding: 5px;
+        }
+        .select2-container--bootstrap4 .select2-selection--multiple {
+            min-height: 38px;
+        }
+        .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice {
+            background-color: #1976d2;
+            border: none;
+            color: white;
+            padding: 2px 8px;
+            margin: 2px;
+        }
+        .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice__remove {
+            color: white;
+            margin-right: 5px;
+        }
+        .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice__remove:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.2);
+        }
+        .select2-container--bootstrap4 .select2-results__option--highlighted[aria-selected] {
+            background-color: #1976d2;
+        }
+        .select2-container {
+            width: 100% !important;
+        }
+        .select2-container .select2-selection--single {
+            height: 38px !important;
+        }
+        .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
+            line-height: 38px !important;
+            padding-right: 12px !important;
+        }
+        .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
+            height: 36px !important;
+        }
+    </style>
+{% endblock head %}
+
+{% block title %}ایجاد پروژه{% endblock %}
+{% block main %}
+<div class="container py-4 py-lg-5">
+    <div class="page-toolbar mb-4">
+        <button type="button" class="btn btn-outline-secondary rounded-pill page-back-btn" onclick="history.back()">
+            <i class="bi bi-arrow-right me-2"></i>بازگشت
+        </button>
+    </div>
+    <div class="row justify-content-center">
+        <div class="col-lg-11 col-xl-10">
+            <div class="card border-0 shadow-lg rounded-5 overflow-hidden mb-4">
+                <div class="card-header bg-white text-center py-4">
+                    <h3 class="mb-0 text-dark fw-bold">ایجاد پروژه</h3>
+                </div>
+
+    <form method="post" class="row g-4" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+            <div class="col-12">
+            <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                {{ form.non_field_errors }}
+            </div>
+            </div>
+        {% endif %}
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="col-12">
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                    {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- اطلاعات اصلی -->
+        <div class="col-12">
+            <div class="form-section">
+                <h3 class="form-section-title">
+                    <i class="fas fa-info-circle me-2"></i>
+                    اطلاعات اصلی
+                </h3>
+                <div class="row g-3">
+            {% for field in form %}
+                        {% if field.name == 'name' or field.name == 'parent_project' or field.name == 'project_manager' or field.name == 'technical_manager' or field.name == 'quality_control_manager' or field.name == 'lab_manager' or field.name == 'hsse_manager' or field.name == 'project_experts' %}
+                            <div class="col-md-4">
+                <label class="form-label">{{ field.label }}</label>
+                                {% if field.field.widget.input_type == 'file' %}
+                                    <div class="custom-file">
+                                        {% render_field field class="form-control custom-file-input" onchange="updateFileName(this)" %}
+                                        <label class="form-control custom-file-label" for="{{ field.id_for_label }}">
+                                            انتخاب فایل
+                                        </label>
+                                    </div>
+                                {% elif 'date' in field.name %}
+                                    <div class="date-input-group">
+                                        {% render_field field class="form-control jalali_date-input" %}
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </div>
+                                {% elif field.field.widget.input_type == 'select' or field.field.widget.input_type == 'select-multiple' %}
+                                    {% render_field field class="form-control select2" data-placeholder="انتخاب کنید..." %}
+                                {% else %}
+                                    {% render_field field class="form-control" %}
+                                {% endif %}
+                {% if field.errors %}
+                                    <div class="field-error">
+                                        <i class="fas fa-exclamation-circle me-1"></i>
+                    {{ field.errors|striptags }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- اطلاعات مالی -->
+        <div class="col-12">
+            <div class="form-section">
+                <h3 class="form-section-title">
+                    <i class="fas fa-money-bill-wave me-2"></i>
+                    اطلاعات مالی
+                </h3>
+                <div class="row g-3">
+                    {% for field in form %}
+                        {% if field.name == 'contract_amount' %}
+                            <div class="col-md-4">
+                                <label class="form-label">{{ field.label }}</label>
+                                {% render_field field class="form-control" %}
+                                {% if field.errors %}
+                                    <div class="field-error">
+                                        <i class="fas fa-exclamation-circle me-1"></i>
+                                        {{ field.errors|striptags }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% elif field.name == 'is_parent_only' %}
+                            <div class="col-md-4">
+                                <div class="form-check mt-4">
+                                    {% render_field field class="form-check-input" %}
+                                    <label class="form-check-label" for="{{ field.id_for_label }}">
+                                        {{ field.label }}
+                                    </label>
+                                    {% if field.help_text %}
+                                        <small class="form-text text-muted d-block mt-1">{{ field.help_text }}</small>
+                                    {% endif %}
+                                    {% if field.errors %}
+                                        <div class="field-error">
+                                            <i class="fas fa-exclamation-circle me-1"></i>
+                                            {{ field.errors|striptags }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- اطلاعات فنی -->
+        <div class="col-12" id="technical-info-section">
+            <div class="form-section">
+                <h3 class="form-section-title">
+                    <i class="fas fa-cogs me-2"></i>
+                    اطلاعات فنی
+                </h3>
+                <div class="row g-3">
+                    {% for field in form %}
+                        {% if field.name == 'masafat' or field.name == 'width' or field.name == 'start_kilometer' or field.name == 'end_kilometer' or field.name == 'profile_file' or field.name == 'start_date' or field.name == 'end_date' %}
+                            <div class="col-md-4">
+                                <label class="form-label">{{ field.label }}</label>
+                                {% if field.field.widget.input_type == 'file' %}
+                                    <div class="custom-file">
+                                        {% render_field field class="form-control custom-file-input" onchange="updateFileName(this)" %}
+                                        <label class="form-control custom-file-label" for="{{ field.id_for_label }}">
+                                            انتخاب فایل
+                                        </label>
+                                    </div>
+                                {% elif 'date' in field.name %}
+                                    <div class="date-input-group">
+                                        {% render_field field class="form-control jalali_date-input" %}
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </div>
+                                {% elif field.field.widget.input_type == 'select' or field.field.widget.input_type == 'select-multiple' %}
+                                    {% render_field field class="form-control select2" data-placeholder="انتخاب کنید..." %}
+                                {% else %}
+                                    {% render_field field class="form-control" %}
+                                {% endif %}
+                                {% if field.errors %}
+                                    <div class="field-error">
+                                        <i class="fas fa-exclamation-circle me-1"></i>
+                                        {{ field.errors|striptags }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 text-center mt-4">
+            <button type="submit" class="btn btn-primary submit-btn">
+                <i class="fas fa-save me-2"></i>
+                ثبت پروژه
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Modals for Numeric Inputs -->
+<div class="modal fade" id="numericInputModal" tabindex="-1" aria-labelledby="numericInputModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="numericInputModalLabel">ورود مقدار</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="modalNumericInput" class="form-control form-control-lg text-center" autocomplete="off" inputmode="numeric" pattern="[0-9]*">
+        <div class="form-text mt-2" id="modalNumericInputHelp"></div>
+        <div class="form-text text-primary mt-1" id="modalNumericInputPreview"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+        <button type="button" class="btn btn-primary" id="modalNumericInputConfirm">تایید</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}
+<script src="{% static 'js/select2.min.js' %}"></script>
+<script src="{% static 'js/persian-date.min.js' %}"></script>
+<script src="{% static 'js/persian-datepicker.min.js' %}"></script>
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+<script>
+    $(document).ready(function() {
+        // Select2 initialization
+        $('.select2').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            placeholder: 'انتخاب کنید...',
+            allowClear: true,
+            dir: 'rtl',
+            language: {
+                noResults: function() {
+                    return "نتیجه‌ای یافت نشد";
+                },
+                searching: function() {
+                    return "در حال جستجو...";
+                }
+            },
+            dropdownParent: $('body')
+        });
+        
+        // Persian Datepicker initialization
+        $('.jalali_date-input').persianDatepicker({
+            format: 'YYYY/MM/DD',
+            initialValue: false,
+            autoClose: true,
+            position: 'auto',
+            calendar: {
+                persian: {
+                    locale: 'fa'
+                }
+            }
+        });
+        
+        // کنترل نمایش/مخفی کردن بخش اطلاعات فنی بر اساس وضعیت پروژه اصلی
+        function toggleTechnicalInfo() {
+            const isParentOnly = $('#id_is_parent_only').is(':checked');
+            const technicalSection = $('#technical-info-section');
+            
+            if (isParentOnly) {
+                technicalSection.slideUp(300);
+                // غیرفعال کردن فیلدهای فنی (اختیاری)
+                $('#technical-info-section input, #technical-info-section select').prop('required', false);
+            } else {
+                technicalSection.slideDown(300);
+            }
+        }
+        
+        // اجرای تابع در بارگذاری صفحه
+        toggleTechnicalInfo();
+        
+        // اجرای تابع هنگام تغییر وضعیت checkbox
+        $('#id_is_parent_only').on('change', function() {
+            toggleTechnicalInfo();
+        });
+    });
+
+    // File input handler
+    function updateFileName(input) {
+        const fileName = input.files[0]?.name || 'انتخاب فایل';
+        const label = input.nextElementSibling;
+        label.textContent = fileName;
+    }
+</script>
+
+<script>
+// Utility: format integer with thousand separators
+function formatIntWithCommas(val) {
+    val = val.replace(/[^\d]/g, '');
+    return val.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// Modal logic for numeric fields
+let currentTargetInput = null;
+let modal = null;
+document.addEventListener('DOMContentLoaded', function() {
+    modal = new bootstrap.Modal(document.getElementById('numericInputModal'));
+    const modalInput = document.getElementById('modalNumericInput');
+    const modalHelp = document.getElementById('modalNumericInputHelp');
+    const confirmBtn = document.getElementById('modalNumericInputConfirm');
+    const modalPreview = document.getElementById('modalNumericInputPreview');
+
+    // Attach click to relevant fields
+    ['id_contract_amount', 'id_masafat', 'id_start_kilometer', 'id_end_kilometer', 'id_width'].forEach(function(fieldId) {
+        const el = document.getElementById(fieldId);
+        if (el) {
+            el.readOnly = true;
+            el.style.background = '#f8f9fa';
+            el.addEventListener('click', function(e) {
+                currentTargetInput = el;
+                modalInput.value = el.value.replace(/,/g, '');
+                modalInput.focus();
+                if(fieldId === 'id_contract_amount') {
+                  modalHelp.innerText = 'مقدار را به ریال وارد کنید.';
+                } else if(fieldId === 'id_width') {
+                  modalHelp.innerText = 'مقدار را به متر وارد کنید.';
+                } else {
+                  modalHelp.innerText = 'مقدار را به کیلومتر وارد کنید.';
+                }
+                modalPreview.innerText = formatIntWithCommas(modalInput.value) ? 'نمایش: ' + formatIntWithCommas(modalInput.value) : '';
+                modal.show();
+            });
+        }
+    });
+
+    // Format input as user types and show preview
+    modalInput.addEventListener('input', function() {
+        // فقط اعداد و ممیز اعشاری (نقطه یا کاما) مجاز باشد
+        modalInput.value = modalInput.value.replace(/[^\d.,]/g, '');
+        // فقط یک ممیز مجاز باشد
+        let parts = modalInput.value.split(/[.,]/);
+        if(parts.length > 2) {
+            modalInput.value = parts[0] + '.' + parts.slice(1).join('');
+        } else if(parts.length === 2) {
+            modalInput.value = parts[0] + '.' + parts[1];
+        }
+        // پیش‌نمایش با کاما
+        let previewVal = modalInput.value.replace(/,/g, '');
+        if(previewVal) {
+            let num = parseFloat(previewVal);
+            if(!isNaN(num)) {
+                modalPreview.innerText = 'نمایش: ' + num.toLocaleString('en-US', {maximumFractionDigits: 3});
+            } else {
+                modalPreview.innerText = '';
+            }
+        } else {
+            modalPreview.innerText = '';
+        }
+    });
+
+    // Confirm button sets value
+    confirmBtn.addEventListener('click', function() {
+        if(currentTargetInput) {
+            // مقدار را به فرمت اعشاری استاندارد (نقطه) ذخیره کن
+            let val = modalInput.value.replace(/,/g, '.');
+            // فقط یک ممیز مجاز باشد
+            let parts = val.split('.');
+            if(parts.length > 2) {
+                val = parts[0] + '.' + parts.slice(1).join('');
+            }
+            currentTargetInput.value = val;
+        }
+        modal.hide();
+    });
+
+    // Optional: Enter key confirms
+    modalInput.addEventListener('keydown', function(e) {
+        if(e.key === 'Enter') {
+            confirmBtn.click();
+        }
+    });
+});
+</script>
+
+<script>
+// Format numeric fields to 3 decimal places on blur
+function formatToThreeDecimals(val) {
+    if (val === "") return "";
+    let num = parseFloat(val.replace(/,/g, ''));
+    if (isNaN(num)) return "";
+    return num.toFixed(3);
+}
+
+['id_contract_amount', 'id_masafat', 'id_width', 'id_start_kilometer', 'id_end_kilometer'].forEach(function(fieldId) {
+    const el = document.getElementById(fieldId);
+    if (el) {
+        el.addEventListener('blur', function() {
+            el.value = formatToThreeDecimals(el.value);
+        });
+    }
+});
+</script>
+{% endblock %}
+{% endblock main %}

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}حذف کمیسیون کیفیت{% endblock %}
+
+{% block main %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-lg">
+        <div class="card-header bg-danger text-white">
+          <h6 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>تایید حذف کمیسیون کیفیت</h6>
+        </div>
+        <div class="card-body">
+          <p class="fw-bold text-danger">آیا از حذف این کمیسیون کیفیت اطمینان دارید؟</p>
+          <ul class="list-group mb-4">
+            <li class="list-group-item d-flex justify-content-between">
+              <span>پروژه</span>
+              <strong>{{ commission.project.name }}</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>لایه</span>
+              <strong>{{ commission.get_layer_display }}</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>کمیسیون کیفیت</span>
+              <strong>{{ commission.coefficient }}%</strong>
+            </li>
+          </ul>
+          <form method="post" class="d-flex justify-content-between">
+            {% csrf_token %}
+            <a href="{% url 'experiment:quality_commission_list' %}" class="btn btn-outline-secondary rounded-pill px-4">
+              انصراف
+            </a>
+            <button type="submit" class="btn btn-danger rounded-pill px-4">
+              <i class="bi bi-trash me-2"></i>حذف
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

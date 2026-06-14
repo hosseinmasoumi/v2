@@ -1,0 +1,423 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}
+داشبورد پروژه - {{ project.name }}
+{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/persian-datepicker.min.css' %}" />
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}" />
+{{ project_data|json_script:"project-data" }}
+{% endblock %}
+
+{% block main %}
+<div class="dashboard-wrapper">
+  <!-- هدر پروژه -->
+  <div class="dashboard-header-modern">
+    <div class="header-content">
+      <div class="project-title-section">
+        <h2 class="project-title">
+          <i class="bi bi-diagram-3 me-2"></i>{{ project.name }}
+        </h2>
+        <p class="project-subtitle">داشبورد کنترل کیفیت پروژه</p>
+      </div>
+    </div>
+    
+    <!-- کارت‌های اطلاعات پروژه -->
+    <div class="project-info-cards">
+      <div class="info-card-modern">
+        <div class="info-icon bg-gradient-blue">
+          <i class="bi bi-speedometer2"></i>
+        </div>
+        <div class="info-content">
+          <span class="info-label">مسافت پروژه</span>
+          <span class="info-value">{{ project.masafat|intcomma_float }} <small>کیلومتر</small></span>
+        </div>
+      </div>
+      <div class="info-card-modern">
+        <div class="info-icon bg-gradient-green">
+          <i class="bi bi-geo-alt"></i>
+        </div>
+        <div class="info-content">
+          <span class="info-label">کیلومتر شروع</span>
+          <span class="info-value">{{ project.start_kilometer|intcomma_float }}</span>
+        </div>
+      </div>
+      <div class="info-card-modern">
+        <div class="info-icon bg-gradient-orange">
+          <i class="bi bi-geo-alt-fill"></i>
+        </div>
+        <div class="info-content">
+          <span class="info-label">کیلومتر پایان</span>
+          <span class="info-value">{{ project.end_kilometer|intcomma_float }}</span>
+        </div>
+      </div>
+      <div class="info-card-modern">
+        <div class="info-icon bg-gradient-purple">
+          <i class="bi bi-arrows-expand"></i>
+        </div>
+        <div class="info-content">
+          <span class="info-label">عرض پروژه</span>
+          <span class="info-value">{{ project.width|intcomma_float }} <small>متر</small></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- کنترل‌های نمودار -->
+  <div class="chart-controls-modern">
+    <div class="controls-header">
+      <h5 class="controls-title">
+        <i class="bi bi-sliders me-2"></i>کنترل‌های نمودار
+      </h5>
+    </div>
+    
+    <div class="controls-body">
+      <div class="coordinates-section">
+        <div class="coordinate-input-modern">
+          <label for="xinput" class="coordinate-label">
+            <i class="bi bi-geo-alt me-1"></i>کیلومتر
+          </label>
+          <input id="xinput" type="text" class="coordinate-field" readonly>
+        </div>
+        <div class="coordinate-input-modern">
+          <label for="yinput" class="coordinate-label">
+            <i class="bi bi-arrow-up me-1"></i>ارتفاع
+          </label>
+          <input id="yinput" type="text" class="coordinate-field" readonly>
+        </div>
+      </div>
+      
+      <div class="toggle-buttons-section">
+        <div class="toggle-buttons-group">
+          <button class="btn-toggle-modern" id="toggleRoadLine">
+            <i class="bi bi-signpost-2"></i>
+            <span>خط جاده</span>
+          </button>
+          <button class="btn-toggle-modern" id="toggleLandLine">
+            <i class="bi bi-mountain"></i>
+            <span>خط زمین</span>
+          </button>
+          <button class="btn-toggle-modern" id="toggleLayerLine">
+            <i class="bi bi-stack"></i>
+            <span>لایه‌ها</span>
+          </button>
+          <button class="btn-toggle-modern" id="toggleStructures">
+            <i class="bi bi-bridge"></i>
+            <span>ابنیه‌ها</span>
+          </button>
+          <button class="btn-toggle-modern" id="toggleExperiments">
+            <i class="bi bi-flask"></i>
+            <span>آزمایش‌ها</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- فیلتر زمانی -->
+      <div class="date-filter-modern">
+        <div class="filter-header">
+          <i class="bi bi-calendar-range me-2"></i>
+          <span>فیلتر زمانی</span>
+        </div>
+        <div class="filter-body">
+          <div class="date-input-group">
+            <label for="startDate" class="date-label">از تاریخ</label>
+            <input type="text" id="startDate" class="date-input-modern" placeholder="از تاریخ" autocomplete="off">
+          </div>
+          <div class="date-input-group">
+            <label for="endDate" class="date-label">تا تاریخ</label>
+            <input type="text" id="endDate" class="date-input-modern" placeholder="تا تاریخ" autocomplete="off">
+          </div>
+          <button type="button" class="btn-filter-modern btn-apply" id="applyDateFilter">
+            <i class="bi bi-funnel me-1"></i>اعمال فیلتر
+          </button>
+          <button type="button" class="btn-filter-modern btn-clear" id="clearDateFilter">
+            <i class="bi bi-x-circle me-1"></i>پاک کردن
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- نمودار اصلی -->
+  <div class="chart-container-modern">
+    <div class="chart-header-modern">
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <h5 class="chart-title" style="margin: 0;">
+          <i class="bi bi-graph-up-arrow me-2"></i>نمودار پروفیل طولی پروژه
+        </h5>
+        <div class="zoom-buttons-group">
+          <div class="zoom-axis-group">
+            <span class="zoom-axis-label y-axis">محور Y:</span>
+            <button type="button" class="zoom-btn zoom-in" id="zoomInBtn">
+              <i class="bi bi-zoom-in"></i>
+              <span>زوم بیشتر</span>
+            </button>
+            <button type="button" class="zoom-btn zoom-out" id="zoomOutBtn">
+              <i class="bi bi-zoom-out"></i>
+              <span>زوم کمتر</span>
+            </button>
+          </div>
+          <div class="zoom-axis-group">
+            <span class="zoom-axis-label x-axis">محور X:</span>
+            <button type="button" class="zoom-btn zoom-in" id="zoomInXBtn">
+              <i class="bi bi-zoom-in"></i>
+              <span>زوم بیشتر</span>
+            </button>
+            <button type="button" class="zoom-btn zoom-out" id="zoomOutXBtn">
+              <i class="bi bi-zoom-out"></i>
+              <span>زوم کمتر</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="chart-body-modern">
+      <div class="chart-wrapper-modern">
+        <!-- ستون چپ: محور Y -->
+        <div class="y-axis-wrapper">
+          <canvas id="yAxisCanvas" class="y-axis-canvas"></canvas>
+        </div>
+        <!-- ستون راست: نمودار و محور X -->
+        <div class="chart-main-wrapper" id="dashboard-container">
+          <div class="chart-scroll-container" id="chart-scroll-x">
+            <div class="chart-inner-container" id="chart-canvas-inner">
+              <!-- Legend Box - ریدیزاین شده -->
+              <div class="chart-legend-modern" id="chart-legend">
+                <div class="legend-header">
+                  <i class="bi bi-info-circle me-1"></i>
+                  <span>راهنما</span>
+                </div>
+                <div class="legend-body">
+                  <div class="legend-item">
+                    <div class="legend-icon">
+                      <svg width="24" height="16"><g stroke="rgba(255,0,0,0.7)" stroke-width="2.5"><line x1="0" y1="16" x2="16" y2="0" /><line x1="7" y1="16" x2="23" y2="0" /></g></svg>
+                    </div>
+                    <span class="legend-text">خاکبرداری</span>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-icon">
+                      <svg width="24" height="16"><g stroke="rgba(0,100,255,0.7)" stroke-width="2.5"><line x1="0" y1="16" x2="16" y2="0" /><line x1="7" y1="16" x2="23" y2="0" /></g></svg>
+                    </div>
+                    <span class="legend-text">خاکریزی</span>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-icon">
+                      <svg width="40" height="24">
+                        <rect x="5" y="8" width="30" height="7" fill="#90a4ae" stroke="#37474f" stroke-width="1.8" rx="1" />
+                        <path d="M5,15 Q20,24 35,15" fill="none" stroke="#607d8b" stroke-width="1.8" />
+                        <rect x="3" y="15" width="5" height="8" fill="#78909c" stroke="#37474f" stroke-width="1.2" rx="0.5" />
+                        <rect x="32" y="15" width="5" height="8" fill="#78909c" stroke="#37474f" stroke-width="1.2" rx="0.5" />
+                      </svg>
+                    </div>
+                    <span class="legend-text">پل</span>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-icon legend-icon-layer-fixed">
+                      <svg width="40" height="16">
+                        <line x1="4" y1="8" x2="36" y2="8" stroke="#1f2937" stroke-width="3" stroke-linecap="round" />
+                      </svg>
+                    </div>
+                    <span class="legend-text">لایه ثابت</span>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-icon legend-icon-layer-variable">
+                      <svg width="40" height="16">
+                        <line x1="4" y1="8" x2="36" y2="8" stroke="#fb923c" stroke-width="3" stroke-dasharray="6 6" stroke-linecap="round" />
+                      </svg>
+                    </div>
+                    <span class="legend-text">لایه متغیر</span>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-icon legend-icon-exp-pending">
+                      <svg width="40" height="16">
+                        <line x1="4" y1="8" x2="36" y2="8" stroke="#e2e8f0" stroke-width="6" stroke-linecap="round" />
+                      </svg>
+                    </div>
+                    <span class="legend-text">در انتظار آزمایش</span>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-icon legend-icon-exp-progress">
+                      <svg width="40" height="16">
+                        <line x1="4" y1="8" x2="36" y2="8" stroke="#f97316" stroke-width="6" stroke-linecap="round" />
+                      </svg>
+                    </div>
+                    <span class="legend-text">آزمایش در حال انجام</span>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-icon legend-icon-exp-approved">
+                      <svg width="40" height="16">
+                        <line x1="4" y1="8" x2="36" y2="8" stroke="#22c55e" stroke-width="6" stroke-linecap="round" />
+                      </svg>
+                    </div>
+                    <span class="legend-text">نتیجه تایید شده</span>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-icon legend-icon-exp-rejected">
+                      <svg width="40" height="16">
+                        <line x1="4" y1="8" x2="36" y2="8" stroke="#ef4444" stroke-width="6" stroke-linecap="round" />
+                      </svg>
+                    </div>
+                    <span class="legend-text">نتیجه رد شده</span>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-icon legend-icon-natural">
+                      <svg width="24" height="16"><rect x="3" y="5" width="18" height="8" fill="#fff" stroke="#2196f3" stroke-width="2.5" rx="1" /><text x="7" y="14" font-size="12" fill="#2196f3">🌱</text></svg>
+                    </div>
+                    <span class="legend-text">بستر طبیعی</span>
+                  </div>
+                </div>
+              </div>
+              <!-- End Legend Box -->
+              <canvas id="mainCanvas" class="main-canvas-modern"></canvas>
+              <canvas id="xAxisCanvas" class="x-axis-canvas-modern"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- اطلاعات لایه‌ها -->
+  <div class="layers-section-modern">
+    <div class="layers-header-modern">
+      <h5 class="layers-title">
+        <i class="bi bi-layers me-2"></i>وضعیت لایه‌ها
+      </h5>
+    </div>
+    <div class="layers-grid" id="layers-info">
+      <!-- اطلاعات لایه‌ها اینجا نمایش داده می‌شود -->
+    </div>
+  </div>
+
+  <!-- تولتیپ برای نمایش اطلاعات -->
+  <div id="tooltip" class="tooltip-custom"></div>
+</div>
+
+<script type="module" src="{% static 'js/dashboard.js' %}"></script>
+<script type="module">
+  import { ProjectDashboard } from "{% static 'js/dashboard.js' %}";
+  
+  window.onload = () => {
+    const projectData = JSON.parse(document.getElementById('project-data').textContent);
+    
+    // تنظیم مقادیر اولیه کنترل‌ها
+    document.getElementById("xinput").value = projectData.start_kilometer;
+    document.getElementById("yinput").value = "0";
+    
+    // ایجاد نمونه داشبورد
+    const dashboard = new ProjectDashboard({
+      containerId: 'dashboard-container',
+      projectData: projectData,
+      width: 1200,
+      height: 500,
+      margin: 50
+    });
+    
+    // اتصال دکمه‌های کنترل
+    document.getElementById('toggleRoadLine').addEventListener('click', () => {
+      dashboard.toggleRoadLine();
+      updateButtonState('toggleRoadLine', dashboard.showRoadLine);
+    });
+    
+    document.getElementById('toggleLandLine').addEventListener('click', () => {
+      dashboard.toggleLandLine();
+      updateButtonState('toggleLandLine', dashboard.showLandLine);
+    });
+    
+    document.getElementById('toggleLayerLine').addEventListener('click', () => {
+      dashboard.toggleLayerLine();
+      updateButtonState('toggleLayerLine', dashboard.showLayerLine);
+    });
+    
+    document.getElementById('toggleStructures').addEventListener('click', () => {
+      dashboard.toggleStructures();
+      updateButtonState('toggleStructures', dashboard.showStructures);
+    });
+    
+    document.getElementById('toggleExperiments').addEventListener('click', () => {
+      dashboard.toggleExperiments();
+      updateButtonState('toggleExperiments', dashboard.showExperiments);
+    });
+
+    document.getElementById('zoomInBtn').addEventListener('click', () => dashboard.zoomIn());
+    document.getElementById('zoomOutBtn').addEventListener('click', () => dashboard.zoomOut());
+    document.getElementById('zoomInXBtn').addEventListener('click', () => dashboard.zoomInX());
+    document.getElementById('zoomOutXBtn').addEventListener('click', () => dashboard.zoomOutX());
+    
+    // کنترل‌های فیلتر زمانی
+    document.getElementById('applyDateFilter').addEventListener('click', () => dashboard.applyDateFilter());
+    document.getElementById('clearDateFilter').addEventListener('click', () => dashboard.clearDateFilter());
+    
+    // نمایش اطلاعات لایه‌ها
+    displayLayersInfo(projectData.layers);
+    
+    function updateButtonState(buttonId, isActive) {
+      const button = document.getElementById(buttonId);
+      if (isActive) {
+        button.classList.add('active');
+      } else {
+        button.classList.remove('active');
+      }
+    }
+    
+    function displayLayersInfo(layers) {
+      const container = document.getElementById('layers-info');
+      container.innerHTML = '';
+      layers.forEach(layer => {
+        const isFixed = layer.state === 1;
+        const stateText = isFixed ? 'لایه ثابت' : 'لایه متغیر';
+        const stateIcon = isFixed ? 'bi-diagram-3' : 'bi-diagram-3-fill';
+        const stateAccent = isFixed ? '#2563eb' : '#f97316';
+        const experimentsCount = layer.experiments.length;
+        const executedRanges = (layer.executed_ranges || []).length;
+
+        const layerCard = document.createElement('div');
+        layerCard.className = 'layer-card-modern';
+        layerCard.innerHTML = `
+          <div class="layer-card-header">
+            <div class="layer-icon" style="background: linear-gradient(135deg, ${stateAccent}10, ${stateAccent}15);">
+              <i class="bi ${stateIcon}" style="color: ${stateAccent};"></i>
+            </div>
+            <div class="layer-info">
+              <h6 class="layer-name">${layer.display_name || layer.name}</h6>
+              <span class="layer-details">${stateText}</span>
+            </div>
+          </div>
+          <div class="layer-card-body">
+            <div class="layer-badge-modern" style="background: ${stateAccent}12; color: ${stateAccent}; border-color: ${stateAccent}30;">
+              <i class="bi bi-rulers me-1"></i>ضخامت: ${layer.thickness_cm}cm
+            </div>
+            <div class="layer-badge-modern layer-badge-info">
+              <i class="bi bi-flask me-1"></i>${experimentsCount} آزمایش ثبت‌شده
+            </div>
+            ${!isFixed ? `<div class="layer-badge-modern layer-badge-muted">
+              <i class="bi bi-shuffle me-1"></i>${executedRanges} بازه فعال
+            </div>` : ''}
+          </div>
+        `;
+        container.appendChild(layerCard);
+      });
+    }
+  };
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/persian-date.min.js' %}"></script>
+<script src="{% static 'js/persian-datepicker.min.js' %}"></script>
+<script>
+  $(function() {
+    $('#startDate').persianDatepicker({
+      format: 'YYYY/MM/DD',
+      initialValue: false
+    });
+    $('#endDate').persianDatepicker({
+      format: 'YYYY/MM/DD',
+      initialValue: false
+    });
+  });
+</script>
+{% endblock %}

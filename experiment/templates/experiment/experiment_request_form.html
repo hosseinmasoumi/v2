@@ -1,0 +1,549 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %} {# این خط رو قبلا درست کردین، عالیه! #}
+
+{% block head %}
+{{ form.media }}
+<link href="{% static 'css/select2.min.css' %}" rel="stylesheet" />
+<link href="{% static 'css/select2-bootstrap4.min.css' %}" rel="stylesheet" />
+{% endblock %}
+
+{% block title %}
+{% if form.instance.pk %}
+ویرایش درخواست آزمایش
+{% else %}
+ثبت درخواست آزمایش جدید
+{% endif %}
+{% endblock %}
+
+{% block main %}
+<div class="container py-4">
+    <div class="page-toolbar">
+        <button type="button" class="btn btn-outline-secondary rounded-pill page-back-btn" onclick="history.back()">
+            <i class="bi bi-arrow-right me-2"></i>بازگشت
+        </button>
+    </div>
+    <div class="card shadow rounded-2">
+        <div class="card-header text-center">
+            <h3 class="card-title">
+                {% if form.instance.pk %}
+                ویرایش درخواست آزمایش
+                {% else %}
+                ثبت درخواست آزمایش جدید
+                {% endif %}
+            </h3>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                    <!-- اطلاعات اصلی -->
+                    <div class="col-md-4">
+                        <div class="card mb-3">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="card-title mb-0">اطلاعات اصلی</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">نام و نام خانوادگی</label>
+                                    <input type="text" class="form-control" value="{% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}" readonly>
+                                    <small class="form-text text-muted">نام کاربر به صورت پیشفرض ثبت شده است</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.project.id_for_label }}" class="form-label">پروژه</label>
+                                    {% render_field form.project class="form-control select2" %}
+                                    {% if form.project.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.project.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.layer.id_for_label }}" class="form-label">لایه</label>
+                                    {% render_field form.layer class="form-control select2" %}
+                                    {% if form.layer.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.layer.errors }}
+                                        </div>
+                                    {% endif %}
+                        </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.experiment_type.id_for_label }}" class="form-label">نوع آزمایش</label>
+                                    {% render_field form.experiment_type class="form-control select2" multiple="multiple" %}
+                                    {% if form.experiment_type.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.experiment_type.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">می‌توانید چند مورد را انتخاب کنید</small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.experiment_subtype.id_for_label }}" class="form-label">آزمایش</label>
+                                    {% render_field form.experiment_subtype class="form-control select2" multiple="multiple" %}
+                                    {% if form.experiment_subtype.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.experiment_subtype.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">بستگی به نوع آزمایش انتخاب شده دارد</small>
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    <!-- اطلاعات محل و کیلومتراژ -->
+                    <div class="col-md-4">
+                        <div class="card mb-3">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="card-title mb-0">اطلاعات محل و کیلومتراژ</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3" id="concrete-place-group" style="display:none;">
+                                    <label for="{{ form.concrete_place.id_for_label }}" class="form-label">محل بتن‌ریزی</label>
+                                    {% render_field form.concrete_place class="form-control select2" %}
+                                    {% if form.concrete_place.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.concrete_place.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.request_date.id_for_label }}" class="form-label">تاریخ درخواست</label>
+                                    {% render_field form.request_date class="form-control" %}
+                                    {% if form.request_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.request_date.errors }}
+                                        </div>
+                                    {% endif %}
+                        </div>
+
+                                <div class="alert alert-info small mb-0">
+                                    بازه‌های کیلومتراژ را در بخش «بازه‌های کیلومتراژ» زیر فرم ثبت کنید. اولین بازه ثبت‌شده به عنوان مبنای کیلومتر شروع و پایان درخواست در سامانه ذخیره می‌شود.
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    <!-- اطلاعات تکمیلی -->
+                    <div class="col-md-4">
+                        <div class="card mb-3">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="card-title mb-0">اطلاعات تکمیلی</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label">توضیحات</label>
+                                    {% render_field form.description class="form-control" rows="3" %}
+                                    {% if form.description.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.description.errors }}
+                                        </div>
+                                    {% endif %}
+                        </div>
+
+                                <div class="mb-3" id="target-density-group" style="display:none;">
+                                    <label for="{{ form.target_density.id_for_label }}" class="form-label">حد تراکم</label>
+                                    {% render_field form.target_density class="form-control" %}
+                                    {% if form.target_density.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.target_density.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3" id="target-strength-group" style="display:none;">
+                                    <label for="{{ form.target_strength.id_for_label }}" class="form-label">حد مقاومت فشاری</label>
+                                    {% render_field form.target_strength class="form-control" %}
+                                    {% if form.target_strength.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.target_strength.errors }}
+                                        </div>
+                                    {% endif %}
+                        </div>
+
+                                <div class="mb-3" id="mix-design-group" style="display:none;">
+                                    <label for="id_mix_design" class="form-label">طرح اختلاط</label>
+                                    {% render_field form.mix_design class="form-control" %}
+                                    {% if form.mix_design.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.mix_design.errors }}
+                                        </div>
+                                    {% endif %}
+                        </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.request_file.id_for_label }}" class="form-label">فایل درخواست</label>
+                                    {% render_field form.request_file class="form-control" %}
+                                    {% if form.request_file.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.request_file.errors }}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.instance.request_file %}
+                                    <div class="mt-2">
+                                        <small class="text-muted">فایل فعلی: {{ form.instance.request_file.name }}</small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                            </div>
+                        </div>
+
+                <!-- فرم‌ست کیلومتراژ -->
+                <div class="card mb-4 shadow kilometer-formset-card">
+                    <div class="card-header bg-success text-white d-flex align-items-center justify-content-between">
+                        <span><i class="fas fa-ruler-horizontal me-1"></i> بازه‌های کیلومتراژ</span>
+                        <button type="button" class="btn btn-light btn-sm fw-bold" id="add-kilometer"><i class="fas fa-plus-circle me-1 text-success"></i>افزودن بازه</button>
+                    </div>
+                    <div class="card-body pt-3 pb-2" id="kilometer-formset">
+                        {{ kilometer_formset.management_form }}
+                        {% if kilometer_formset.non_form_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in kilometer_formset.non_form_errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        {% for form in kilometer_formset %}
+                            <div class="row kilometer-form-row align-items-end mb-2 border rounded-3 p-2 position-relative animate__animated animate__fadeIn bg-light">
+                                <div class="col-5">
+                                    <label class="form-label small">شروع (کیلومتر)</label>
+                                    {% render_field form.start_kilometer class="form-control" placeholder="شروع" %}
+                                </div>
+                                <div class="col-5">
+                                    <label class="form-label small">پایان (کیلومتر)</label>
+                                    {% render_field form.end_kilometer class="form-control" placeholder="پایان" %}
+                                </div>
+                                <div class="col-12 mt-2">
+                                    <label class="form-label small">توضیحات بازه</label>
+                                    {% render_field form.description class="form-control" rows="2" placeholder="توضیحات دلخواه برای این بازه" %}
+                                </div>
+                                <div class="col-2 d-flex align-items-end">
+                                    <button type="button" class="btn btn-outline-danger remove-kilometer w-100"><i class="fas fa-trash"></i></button>
+                                </div>
+                                {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                                {% if form.can_delete %}
+                                    <div class="d-none">{% render_field form.DELETE class="delete-checkbox" %}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="card-footer bg-white border-0 pt-2 pb-2">
+                        <div class="form-text text-muted">مثال: 2.000 تا 2.500</div>
+                    </div>
+                </div>
+                <!-- template مخفی برای افزودن بازه جدید -->
+                <template id="kilometer-form-template">
+                    <div class="row kilometer-form-row align-items-end mb-2 border rounded-3 p-2 position-relative animate__animated animate__fadeIn bg-light">
+                        <div class="col-5">
+                            <label class="form-label small">شروع (کیلومتر)</label>
+                            <input type="text" name="__prefix__-start_kilometer" class="form-control" placeholder="شروع" />
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label small">پایان (کیلومتر)</label>
+                            <input type="text" name="__prefix__-end_kilometer" class="form-control" placeholder="پایان" />
+                        </div>
+                        <div class="col-12 mt-2">
+                            <label class="form-label small">توضیحات بازه</label>
+                            <textarea name="__prefix__-description" class="form-control" rows="2" placeholder="توضیحات دلخواه"></textarea>
+                        </div>
+                        <div class="col-2 d-flex align-items-end">
+                            <button type="button" class="btn btn-outline-danger remove-kilometer w-100"><i class="fas fa-trash"></i></button>
+                        </div>
+                        <input type="checkbox" name="__prefix__-DELETE" class="delete-checkbox d-none">
+                    </div>
+                </template>
+                <!-- فرم‌ست فایل‌ها -->
+                <div class="card mb-4 shadow file-formset-card">
+                    <div class="card-header bg-info text-white d-flex align-items-center justify-content-between">
+                        <span><i class="fas fa-paperclip me-1"></i> فایل‌های درخواست</span>
+                        <button type="button" class="btn btn-light btn-sm fw-bold" id="add-file"><i class="fas fa-plus-circle me-1 text-info"></i>افزودن فایل</button>
+                    </div>
+                    <div class="card-body pt-3 pb-2" id="file-formset">
+                        {{ file_formset.management_form }}
+                        {% for form in file_formset %}
+                            <div class="row file-form-row align-items-end mb-2 border rounded-3 p-2 position-relative animate__animated animate__fadeIn bg-light">
+                                <div class="col-10">
+                                    <label class="form-label small">فایل</label>
+                                    {% render_field form.file class="form-control" %}
+                                </div>
+                                <div class="col-2 d-flex align-items-end">
+                                    <button type="button" class="btn btn-outline-danger remove-file w-100"><i class="fas fa-trash"></i></button>
+                                </div>
+                                {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                                {% if form.can_delete %}
+                                    <div class="d-none">{% render_field form.DELETE class="delete-checkbox" %}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <template id="file-form-template">
+                    <div class="row file-form-row align-items-end mb-2 border rounded-3 p-2 position-relative animate__animated animate__fadeIn bg-light">
+                        <div class="col-10">
+                            <label class="form-label small">فایل</label>
+                            <input type="file" name="__prefix__-file" class="form-control" />
+                        </div>
+                        <div class="col-2 d-flex align-items-end">
+                            <button type="button" class="btn btn-outline-danger remove-file w-100"><i class="fas fa-trash"></i></button>
+                        </div>
+                        <input type="checkbox" name="__prefix__-DELETE" class="delete-checkbox d-none">
+                    </div>
+                </template>
+
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-save me-2"></i>
+                        {% if form.instance.pk %}
+                        بروزرسانی درخواست
+                        {% else %}
+                        ثبت درخواست
+                        {% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
+<link href="{% static 'css/select2.min.css' %}" rel="stylesheet" />
+<link href="{% static 'css/select2-bootstrap4.min.css' %}" rel="stylesheet" />
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+$(document).ready(function() {
+    $('.select2').select2({
+        theme: 'bootstrap-5',
+        width: '100%'
+    });
+
+    // Handle project change
+    $('#id_project').on('change', function() {
+        var projectId = $(this).val();
+        var layerSelect = $('#id_layer');
+        var selectedLayer = layerSelect.data('selected');
+        console.log('Project changed:', projectId); // log selected project
+        if (projectId) {
+            $.ajax({
+                url: "{% url 'experiment:get_layers' %}",
+                data: {
+                    'project_id': projectId
+                },
+                dataType: 'json',
+                success: function(data) {
+                    console.log('Layers AJAX response:', data); // log response
+                    layerSelect.empty();
+                    layerSelect.append($('<option></option>').attr('value', '').text('انتخاب کنید'));
+                    $.each(data.layers, function(index, item) {
+                        var option = $('<option></option>')
+                            .attr('value', item.id)
+                            .text(item.name);
+                        if (selectedLayer && selectedLayer == item.id) {
+                            option.attr('selected', 'selected');
+                        }
+                        layerSelect.append(option);
+                    });
+                    layerSelect.trigger('change');
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching layers:', error);
+                    console.log('AJAX error response:', xhr.responseText); // log error response
+                    layerSelect.empty();
+                    layerSelect.append($('<option></option>').attr('value', '').text('خطا در دریافت لایه‌ها'));
+                }
+            });
+        } else {
+            layerSelect.empty();
+            layerSelect.append($('<option></option>').attr('value', '').text('انتخاب کنید'));
+            layerSelect.trigger('change');
+        }
+    });
+
+    // Handle experiment type change
+    $('#id_experiment_type').on('change', function() {
+        var experimentTypeIds = $(this).val(); // آرایه از مقادیر انتخاب شده
+        var subtypeSelect = $('#id_experiment_subtype');
+        if (experimentTypeIds && experimentTypeIds.length > 0) {
+            $.ajax({
+                url: "{% url 'experiment:get_subtypes' %}",
+                traditional: true,
+                data: {
+                    'experiment_type_id': experimentTypeIds
+                },
+                dataType: 'json',
+                success: function(data) {
+                    subtypeSelect.empty();
+                    $.each(data.subtypes, function(index, item) {
+                        subtypeSelect.append(
+                            $('<option></option>')
+                                .attr('value', item.id)
+                                .text(item.name)
+                        );
+                    });
+                    subtypeSelect.trigger('change');
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching subtypes:', error);
+                    subtypeSelect.empty();
+                    subtypeSelect.append($('<option></option>').attr('value', '').text('خطا در دریافت زیرگروه‌ها'));
+                }
+            });
+        } else {
+            subtypeSelect.empty();
+            subtypeSelect.trigger('change');
+        }
+    });
+
+    // نمایش داینامیک فیلدها بر اساس آزمایش و زیرنوع
+    function toggleFieldsByExperimentType() {
+        var selectedTypes = $('#id_experiment_type').select2('data').map(function(item){ return item.text; });
+        var selectedSubtypes = $('#id_experiment_subtype').select2('data').map(function(item){ return item.text; });
+        
+        // نمایش/مخفی کردن طرح اختلاط برای آسفالت
+        if (selectedTypes.some(function(name){ return name.includes('آسفالت'); })) {
+            $('#mix-design-group').show();
+        } else {
+            $('#mix-design-group').hide();
+            $('#id_mix_design').val('');
+        }
+        
+        // نمایش/مخفی کردن محل بتن‌ریزی برای مقاومت فشاری بتن و ملات
+        if (selectedTypes.some(function(name){ return name.includes('مقاومت فشاری بتن'); })) {
+            $('#concrete-place-group').show();
+        } else {
+            $('#concrete-place-group').hide();
+            $('#id_concrete_place').val('').trigger('change');
+        }
+        
+        // نمایش/مخفی کردن حد تراکم برای "خاکریزی" در زیرنوع "تراکم نسبی"
+        if (selectedTypes.some(function(name){ return name.includes('تراکم نسبی'); }) && 
+            selectedSubtypes.some(function(name){ return name.includes('خاکریزی'); })) {
+            $('#target-density-group').show();
+        } else {
+            $('#target-density-group').hide();
+            $('#id_target_density').val('');
+        }
+        
+        // نمایش/مخفی کردن حد مقاومت فشاری برای "ملات بنایی" در زیرنوع "مقاومت فشاری بتن و ملات"
+        if (selectedTypes.some(function(name){ return name.includes('مقاومت فشاری بتن'); }) && 
+            selectedSubtypes.some(function(name){ return name.includes('ملات بنایی'); })) {
+            $('#target-strength-group').show();
+        } else {
+            $('#target-strength-group').hide();
+            $('#id_target_strength').val('');
+        }
+    }
+    
+    // اجرای تابع هنگام تغییر آزمایش
+    $('#id_experiment_type').on('change', toggleFieldsByExperimentType);
+    
+    // اجرای تابع هنگام تغییر زیرنوع
+    $('#id_experiment_subtype').on('change', toggleFieldsByExperimentType);
+    
+    // اجرای اولیه
+    toggleFieldsByExperimentType();
+
+    // Trigger change events if values are pre-selected
+    if ($('#id_project').val()) {
+        $('#id_project').trigger('change');
+    }
+    if ($('#id_experiment_type').val()) {
+        $('#id_experiment_type').trigger('change');
+    }
+
+    // کیلومتراژ
+    function updateKilometerFormsetIndexes() {
+        const forms = $('#kilometer-formset .kilometer-form-row');
+        $('#id_kilometer-TOTAL_FORMS').val(forms.length);
+        forms.each(function(i) {
+            $(this).find('input, select, textarea').each(function() {
+                const name = $(this).attr('name');
+                if (name && name.includes('kilometer-')) {
+                    const newName = name.replace(/kilometer-\d+-/, 'kilometer-' + i + '-');
+                    $(this).attr('name', newName);
+                    const idAttr = $(this).attr('id');
+                    if (idAttr) {
+                        $(this).attr('id', idAttr.replace(/id_kilometer-\d+-/, 'id_kilometer-' + i + '-'));
+                    } else {
+                        $(this).attr('id', 'id_' + newName);
+                    }
+                }
+            });
+        });
+    }
+    $('#add-kilometer').click(function() {
+        const total = $('#kilometer-formset .kilometer-form-row').length;
+        const template = $('#kilometer-form-template').html().replace(/__prefix__/g, 'kilometer-' + total);
+        $('#kilometer-formset').append(template);
+        updateKilometerFormsetIndexes();
+    });
+    $('#kilometer-formset').on('click', '.remove-kilometer', function() {
+        const row = $(this).closest('.kilometer-form-row');
+        const deleteInput = row.find('input[name$="-DELETE"]');
+        const idField = row.find('input[name$="-id"]');
+        if (deleteInput.length && idField.length && idField.val()) {
+            deleteInput.prop('checked', true);
+            row.addClass('d-none');
+        } else {
+            row.remove();
+        }
+        updateKilometerFormsetIndexes();
+    });
+
+    // فایل
+    function updateFileFormsetIndexes() {
+        const forms = $('#file-formset .file-form-row');
+        $('#id_file-TOTAL_FORMS').val(forms.length);
+        forms.each(function(i) {
+            $(this).find('input, select').each(function() {
+                const name = $(this).attr('name');
+                if (name && name.includes('file-')) {
+                    const newName = name.replace(/file-\d+-/, 'file-' + i + '-');
+                    $(this).attr('name', newName);
+                    const idAttr = $(this).attr('id');
+                    if (idAttr) {
+                        $(this).attr('id', idAttr.replace(/id_file-\d+-/, 'id_file-' + i + '-'));
+                    } else {
+                        $(this).attr('id', 'id_' + newName);
+                    }
+                }
+            });
+        });
+    }
+    $('#add-file').click(function() {
+        const total = $('#file-formset .file-form-row').length;
+        const template = $('#file-form-template').html().replace(/__prefix__/g, 'file-' + total);
+        $('#file-formset').append(template);
+        updateFileFormsetIndexes();
+    });
+    $('#file-formset').on('click', '.remove-file', function() {
+        const row = $(this).closest('.file-form-row');
+        const deleteInput = row.find('input[name$="-DELETE"]');
+        const idField = row.find('input[name$="-id"]');
+        if (deleteInput.length && idField.length && idField.val()) {
+            deleteInput.prop('checked', true);
+            row.addClass('d-none');
+        } else {
+            row.remove();
+        }
+        updateFileFormsetIndexes();
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

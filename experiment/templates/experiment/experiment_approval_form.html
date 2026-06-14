@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}تایید آزمایش{% endblock %}
+
+{% block head %}
+    {{ form.media }}
+    <script src="{% static 'js/jquery.min.js' %}"></script>
+    <link href="{% static 'css/select2.min.css' %}" rel="stylesheet" />
+    <script src="{% static 'js/select2.min.js' %}"></script>
+    <link href="{% static 'css/persian-datepicker.min.css' %}" rel="stylesheet" />
+{% endblock %}
+
+{% block main %}
+<div class="container-fluid py-4">
+    <div class="page-toolbar">
+        <button type="button" class="btn btn-outline-secondary rounded-pill page-back-btn" onclick="history.back()">
+            <i class="bi bi-arrow-right me-2"></i>بازگشت
+        </button>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h3 class="card-title">تایید آزمایش</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.experiment_response }}
+                        {% if form.role %}{{ form.role }}{% endif %}
+                        
+                        {% if user_roles|length > 1 %}
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <strong>نکته:</strong> شما برای چند نقش می‌توانید تایید کنید. لطفاً نقش مورد نظر را انتخاب کنید.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.role.id_for_label }}">نقش تاییدکننده</label>
+                                    {% render_field form.role class="form-select" %}
+                                    {% if form.role.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.role.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.status.id_for_label }}">وضعیت تایید</label>
+                                    {% render_field form.status class="form-select" %}
+                                    {% if form.status.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.status.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.approval_date.id_for_label }}">تاریخ تایید</label>
+                                    {% render_field form.approval_date class="form-control jalali_date-input" %}
+                                    {% if form.approval_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.approval_date.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.penalty_percentage.id_for_label }}">درصد جریمه</label>
+                                    {% render_field form.penalty_percentage class="form-control" %}
+                                    {% if form.penalty_percentage.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.penalty_percentage.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="{{ form.description.id_for_label }}">توضیحات</label>
+                                    {% render_field form.description class="form-control" %}
+                                    {% if form.description.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.description.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">ثبت تایید</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/persian-date.min.js' %}"></script>
+<script src="{% static 'js/persian-datepicker.min.js' %}"></script>
+<script>
+    $(document).ready(function() {
+        $('.select2').select2({
+            theme: 'bootstrap4',
+            width: '100%'
+        });
+        // فعال‌سازی تقویم شمسی برای تاریخ تایید
+        $('.jalali_date-input').persianDatepicker({
+            format: 'YYYY/MM/DD',
+            initialValue: false,
+            autoClose: true,
+            position: 'auto',
+            calendar: {
+                persian: {
+                    locale: 'fa'
+                }
+            }
+        });
+    });
+</script>
+{% endblock %} 

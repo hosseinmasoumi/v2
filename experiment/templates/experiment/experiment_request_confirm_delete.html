@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}حذف درخواست آزمایش{% endblock %}
+
+{% block main %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="card-title mb-0">حذف درخواست آزمایش</h3>
+                </div>
+                <div class="card-body">
+                    <p>آیا از حذف درخواست آزمایش مربوط به پروژه <b>"{{ object.project.name }}"</b> و لایه <b>"{{ object.layer.layer_type.name }}"</b> اطمینان دارید؟ این عملیات غیرقابل بازگشت است.</p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">بله، حذف شود</button>
+                        <a href="{% url 'experiment:experiment_request_list' %}" class="btn btn-secondary">خیر، بازگشت</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

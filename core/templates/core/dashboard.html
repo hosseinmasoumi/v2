@@ -1,0 +1,1131 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+{% load static %}
+{% block title %}داشبورد مدیریتی{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/persian-datepicker.min.css' %}" />
+<link href="{% static 'css/fontawesome.min.css' %}" rel="stylesheet" />
+{% endblock %}
+{% block main %}
+<div class="dashboard-overlay"></div>
+<div class="container py-5">
+  <div class="page-toolbar mb-4">
+    <button type="button" class="btn btn-outline-secondary rounded-pill page-back-btn" onclick="history.back()">
+      <i class="bi bi-arrow-right me-2"></i>بازگشت
+    </button>
+  </div>
+  <!-- User Info - کوچک شده -->
+  <section class="user-info mb-3">
+    <div class="card dashboard-hero-card shadow-sm border-0 rounded-3 overflow-hidden position-relative">
+      <div class="dashboard-hero bg-gradient text-white py-3 px-3 px-md-4">
+        <div class="dashboard-title-wrapper text-center mb-2">
+          <h3 class="dashboard-title-small mb-0">داشبورد مدیریتی</h3>
+        </div>
+        <div class="dashboard-meta d-flex flex-column flex-md-row align-items-center justify-content-between gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <div class="avatar-small bg-white text-primary rounded-circle d-flex justify-content-center align-items-center shadow">
+              <i class="bi bi-person-circle"></i>
+            </div>
+            <div class="text-white text-center text-md-start">
+              <h6 class="fw-bold mb-0">@{{ user_info.full_name }}</h6>
+              <div class="small">نام کاربری: <span class="fw-semibold">{{ user_info.username }}</span></div>
+            </div>
+          </div>
+          <div class="dashboard-meta-actions d-flex flex-wrap justify-content-center justify-content-md-end gap-2">
+            {% if user_projects %}
+              <span class="badge dashboard-stat-chip-small fw-semibold px-2 py-1 rounded-pill shadow-sm">
+                <i class="bi bi-kanban me-1"></i> {{ user_projects|length }} پروژه
+              </span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="bg-white px-3 py-2">
+        <div class="d-flex flex-wrap gap-1 justify-content-center justify-content-md-start">
+          {% for role in roles %}
+            <span class="badge bg-gradient-primary text-white px-2 py-1 rounded-pill shadow-sm d-flex align-items-center gap-1 small">
+              <i class="bi bi-award-fill"></i> {{ role }}
+            </span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- فیلتر زمانی و پروژه -->
+  <section class="time-filter mb-4">
+    <div class="card shadow-sm border-0 rounded-3">
+      <div class="card-body py-2">
+        <form method="get" id="filter-form" class="d-flex align-items-center gap-3 flex-wrap">
+          <div class="d-flex align-items-center gap-2">
+            <label class="mb-0 fw-semibold">فیلتر پروژه:</label>
+            <select name="project" id="project-filter" class="form-select form-select-sm" style="width: 200px;">
+              <option value="">همه پروژه‌ها</option>
+              {% for project in all_projects %}
+              <option value="{{ project.id }}" {% if selected_project_id == project.id %}selected{% endif %}>{{ project.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="vr" style="height: 30px;"></div>
+          <div class="d-flex align-items-center gap-2">
+            <label class="mb-0 fw-semibold">فیلتر زمانی:</label>
+            <select name="days" id="days-filter" class="form-select form-select-sm" style="width: auto;">
+              <option value="">انتخاب کنید...</option>
+              <option value="7" {% if filter_type == 'days' and days_filter == 7 %}selected{% endif %}>۷ روز اخیر</option>
+              <option value="30" {% if filter_type == 'days' and days_filter == 30 %}selected{% endif %}>۳۰ روز اخیر</option>
+              <option value="90" {% if filter_type == 'days' and days_filter == 90 %}selected{% endif %}>۹۰ روز اخیر</option>
+              <option value="180" {% if filter_type == 'days' and days_filter == 180 %}selected{% endif %}>۶ ماه اخیر</option>
+              <option value="365" {% if filter_type == 'days' and days_filter == 365 %}selected{% endif %}>یک سال اخیر</option>
+            </select>
+            <span class="mx-2">یا</span>
+            <label class="mb-0 fw-semibold">از تاریخ:</label>
+            <div class="date-input-group" style="position: relative; display: inline-block; width: 120px;">
+              <input type="text" name="date_from" id="date-from" class="form-control form-control-sm jalali_date-input" placeholder="1403/01/01" value="{% if filter_type == 'calendar' %}{{ date_from }}{% endif %}" style="width: 100%; padding-right: 35px;">
+              <i class="fas fa-calendar-alt" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #6c757d; pointer-events: none;"></i>
+            </div>
+            <label class="mb-0 fw-semibold">تا تاریخ:</label>
+            <div class="date-input-group" style="position: relative; display: inline-block; width: 120px;">
+              <input type="text" name="date_to" id="date-to" class="form-control form-control-sm jalali_date-input" placeholder="1403/12/29" value="{% if filter_type == 'calendar' %}{{ date_to }}{% endif %}" style="width: 100%; padding-right: 35px;">
+              <i class="fas fa-calendar-alt" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #6c757d; pointer-events: none;"></i>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-sm btn-primary">اعمال فیلتر</button>
+          {% if filter_type or selected_project_id %}
+          <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">پاک کردن</a>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- نمایش پروژه انتخاب شده -->
+  {% if selected_project_id %}
+  <div class="alert alert-primary mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <i class="bi bi-funnel-fill me-2"></i>
+      <strong>پروژه انتخاب شده:</strong> 
+      {% for project in all_projects %}
+        {% if project.id == selected_project_id %}{{ project.name }}{% endif %}
+      {% endfor %}
+    </div>
+    <a href="{% url 'dashboard' %}{% if filter_type == 'days' and days_filter %}?days={{ days_filter }}{% elif filter_type == 'calendar' and date_from and date_to %}?date_from={{ date_from }}&date_to={{ date_to }}{% endif %}" class="btn btn-sm btn-outline-primary">
+      <i class="bi bi-x-circle me-1"></i>حذف فیلتر پروژه
+    </a>
+  </div>
+  {% endif %}
+  
+  <!-- نمودارهای دایره‌ای به ازای هر پروژه -->
+  <section class="charts-section mb-5">
+    <div class="row g-4">
+      <!-- نمودارهای وضعیت آزمایشات برای هر پروژه -->
+      {% for project_stat in projects_stats %}
+      <div class="col-12">
+        <div class="card shadow-sm border-0 rounded-4">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i>وضعیت آزمایشات{% if selected_project_id %} - {{ project_stat.project.name }}{% endif %}</h5>
+            <div class="d-flex gap-2 flex-wrap">
+              {% if filter_type == 'days' and days_filter %}
+              <span class="badge bg-info">زمان: {{ days_filter }} روز اخیر</span>
+              {% elif filter_type == 'calendar' and date_from and date_to %}
+              <span class="badge bg-info">زمان: از {{ date_from }} تا {{ date_to }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="chart-card text-center">
+                  <div style="max-width: 100px; margin: 0 auto;">
+                    <canvas id="experimentCompletedChart-{{ project_stat.project.id }}" width="100" height="100"></canvas>
+                  </div>
+                  <h6 class="mt-2 mb-0 small">قابل قبول</h6>
+                  <p class="text-muted small mb-0">{{ project_stat.stats.acceptable }} مورد</p>
+                </div>
+              </div>
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="chart-card text-center">
+                  <div style="max-width: 100px; margin: 0 auto;">
+                    <canvas id="experimentRecompactChart-{{ project_stat.project.id }}" width="100" height="100"></canvas>
+                  </div>
+                  <h6 class="mt-2 mb-0 small">ری‌کامپکت</h6>
+                  <p class="text-muted small mb-0">{{ project_stat.stats.recompact }} مورد</p>
+                </div>
+              </div>
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="chart-card text-center">
+                  <div style="max-width: 100px; margin: 0 auto;">
+                    <canvas id="experimentRejectedChart-{{ project_stat.project.id }}" width="100" height="100"></canvas>
+                  </div>
+                  <h6 class="mt-2 mb-0 small">رد شده</h6>
+                  <p class="text-muted small mb-0">{{ project_stat.stats.rejected }} مورد</p>
+                </div>
+              </div>
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="chart-card text-center">
+                  <div style="max-width: 100px; margin: 0 auto;">
+                    <canvas id="experimentInProgressChart-{{ project_stat.project.id }}" width="100" height="100"></canvas>
+                  </div>
+                  <h6 class="mt-2 mb-0 small">در حال انجام</h6>
+                  <p class="text-muted small mb-0">{{ project_stat.stats.in_progress }} مورد</p>
+                </div>
+              </div>
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="chart-card text-center">
+                  <div style="max-width: 100px; margin: 0 auto;">
+                    <canvas id="experimentPendingChart-{{ project_stat.project.id }}" width="100" height="100"></canvas>
+                  </div>
+                  <h6 class="mt-2 mb-0 small">در انتظار بررسی</h6>
+                  <p class="text-muted small mb-0">{{ project_stat.stats.pending }} مورد</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+      
+      <!-- نمودارهای کلی (اگر پروژه‌ای انتخاب نشده باشد) -->
+      {% if not selected_project_id and not projects_stats %}
+      <div class="col-12">
+        <div class="card shadow-sm border-0 rounded-4">
+          <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i>وضعیت آزمایشات (کلی)</h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="chart-card text-center">
+                  <div style="max-width: 100px; margin: 0 auto;">
+                    <canvas id="experimentCompletedChart" width="100" height="100"></canvas>
+                  </div>
+                  <h6 class="mt-2 mb-0 small">قابل قبول</h6>
+                  <p class="text-muted small mb-0">{{ experiment_status_data.acceptable }} مورد</p>
+                </div>
+              </div>
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="chart-card text-center">
+                  <div style="max-width: 100px; margin: 0 auto;">
+                    <canvas id="experimentRecompactChart" width="100" height="100"></canvas>
+                  </div>
+                  <h6 class="mt-2 mb-0 small">ری‌کامپکت</h6>
+                  <p class="text-muted small mb-0">{{ experiment_status_data.recompact }} مورد</p>
+                </div>
+              </div>
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="chart-card text-center">
+                  <div style="max-width: 100px; margin: 0 auto;">
+                    <canvas id="experimentRejectedChart" width="100" height="100"></canvas>
+                  </div>
+                  <h6 class="mt-2 mb-0 small">رد شده</h6>
+                  <p class="text-muted small mb-0">{{ experiment_status_data.rejected }} مورد</p>
+                </div>
+              </div>
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="chart-card text-center">
+                  <div style="max-width: 100px; margin: 0 auto;">
+                    <canvas id="experimentInProgressChart" width="100" height="100"></canvas>
+                  </div>
+                  <h6 class="mt-2 mb-0 small">در حال انجام</h6>
+                  <p class="text-muted small mb-0">{{ experiment_status_data.in_progress }} مورد</p>
+                </div>
+              </div>
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="chart-card text-center">
+                  <div style="max-width: 100px; margin: 0 auto;">
+                    <canvas id="experimentPendingChart" width="100" height="100"></canvas>
+                  </div>
+                  <h6 class="mt-2 mb-0 small">در انتظار بررسی</h6>
+                  <p class="text-muted small mb-0">{{ experiment_status_data.pending }} مورد</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      
+      <!-- نمودارهای حجم کل به ازای هر پروژه -->
+      {% for project_stat in projects_stats %}
+      <div class="col-12">
+        <div class="card shadow-sm border-0 rounded-4">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>حجم کل کار انجام شده{% if selected_project_id %} - {{ project_stat.project.name }}{% endif %}</h5>
+            <div class="d-flex gap-2 flex-wrap">
+              {% if filter_type == 'days' and days_filter %}
+              <span class="badge bg-info">زمان: {{ days_filter }} روز اخیر</span>
+              {% elif filter_type == 'calendar' and date_from and date_to %}
+              <span class="badge bg-info">زمان: از {{ date_from }} تا {{ date_to }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="chart-card text-center">
+                  <div style="max-width: 100px; margin: 0 auto;">
+                    <canvas id="volumeEmbankmentChart-{{ project_stat.project.id }}" width="100" height="100"></canvas>
+                  </div>
+                  <h6 class="mt-2 mb-0 small">خاکریزی</h6>
+                  <p class="text-muted small mb-0">{{ project_stat.volume.embankment|floatformat:2 }} متر³</p>
+                </div>
+              </div>
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="chart-card text-center">
+                  <div style="max-width: 100px; margin: 0 auto;">
+                    <canvas id="volumeConcreteChart-{{ project_stat.project.id }}" width="100" height="100"></canvas>
+                  </div>
+                  <h6 class="mt-2 mb-0 small">بتن ریزی</h6>
+                  <p class="text-muted small mb-0">{{ project_stat.volume.concrete|floatformat:2 }} متر³</p>
+                </div>
+              </div>
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="chart-card text-center">
+                  <div style="max-width: 100px; margin: 0 auto;">
+                    <canvas id="volumeAsphaltChart-{{ project_stat.project.id }}" width="100" height="100"></canvas>
+                  </div>
+                  <h6 class="mt-2 mb-0 small">آسفالت</h6>
+                  <p class="text-muted small mb-0">{{ project_stat.volume.asphalt|floatformat:2 }} متر³</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+      
+      <!-- نمودارهای حجم کلی (اگر پروژه‌ای انتخاب نشده باشد) -->
+      {% if not selected_project_id and not projects_stats %}
+      <div class="col-12">
+        <div class="card shadow-sm border-0 rounded-4">
+          <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>حجم کل کار انجام شده (کلی)</h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="chart-card text-center">
+                  <div style="max-width: 100px; margin: 0 auto;">
+                    <canvas id="volumeEmbankmentChart" width="100" height="100"></canvas>
+                  </div>
+                  <h6 class="mt-2 mb-0 small">خاکریزی</h6>
+                  <p class="text-muted small mb-0">{{ volume_data.embankment|floatformat:2 }} متر³</p>
+                </div>
+              </div>
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="chart-card text-center">
+                  <div style="max-width: 100px; margin: 0 auto;">
+                    <canvas id="volumeConcreteChart" width="100" height="100"></canvas>
+                  </div>
+                  <h6 class="mt-2 mb-0 small">بتن ریزی</h6>
+                  <p class="text-muted small mb-0">{{ volume_data.concrete|floatformat:2 }} متر³</p>
+                </div>
+              </div>
+              <div class="col-6 col-md-4 col-lg-2">
+                <div class="chart-card text-center">
+                  <div style="max-width: 100px; margin: 0 auto;">
+                    <canvas id="volumeAsphaltChart" width="100" height="100"></canvas>
+                  </div>
+                  <h6 class="mt-2 mb-0 small">آسفالت</h6>
+                  <p class="text-muted small mb-0">{{ volume_data.asphalt|floatformat:2 }} متر³</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- نمودارهای آماری: Xbar-R, Xbar-S, هیستوگرام, پراکندگی -->
+  <section class="dashboard-stats-section mb-5">
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="mb-0"><i class="bi bi-graph-up-arrow me-2"></i>نمودارهای آماری کنترل فرایند</h5>
+        <span class="badge bg-primary">شبیه Minitab — داده نمایشی/واقعی</span>
+      </div>
+      <div class="card-body">
+        <div class="row g-4">
+          <div class="col-12">
+            <div class="stat-chart-panel">
+              <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                <h6 class="mb-0 fw-bold">نمودار کنترل Xbar-R — ضریب پرداخت</h6>
+                <span class="small text-muted" id="xbarRStats"></span>
+              </div>
+              <div class="control-chart-stack">
+                <div class="control-chart-sub">
+                  <div class="control-chart-subtitle">میانگین نمونه (X̄)</div>
+                  <div class="control-chart-container control-chart-container-sm">
+                    <canvas id="xbarRMeanChart"></canvas>
+                  </div>
+                </div>
+                <div class="control-chart-sub">
+                  <div class="control-chart-subtitle">دامنه نمونه (R)</div>
+                  <div class="control-chart-container control-chart-container-sm">
+                    <canvas id="xbarRRangeChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="stat-chart-panel">
+              <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                <h6 class="mb-0 fw-bold">نمودار کنترل Xbar-S — کمیسیون کیفیت</h6>
+                <span class="small text-muted" id="xbarSStats"></span>
+              </div>
+              <div class="control-chart-stack">
+                <div class="control-chart-sub">
+                  <div class="control-chart-subtitle">میانگین نمونه (X̄)</div>
+                  <div class="control-chart-container control-chart-container-sm">
+                    <canvas id="xbarSMeanChart"></canvas>
+                  </div>
+                </div>
+                <div class="control-chart-sub">
+                  <div class="control-chart-subtitle">انحراف معیار نمونه (S)</div>
+                  <div class="control-chart-container control-chart-container-sm">
+                    <canvas id="xbarSStdChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-xl-6">
+            <div class="stat-chart-panel h-100">
+              <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                <h6 class="mb-0 fw-bold">هیستوگرام — توزیع درصد جریمه آزمایشات</h6>
+                <span class="small text-muted" id="histogramStats"></span>
+              </div>
+              <div class="control-chart-container">
+                <canvas id="histogramChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-xl-6">
+            <div class="stat-chart-panel h-100">
+              <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                <h6 class="mb-0 fw-bold">نمودار پراکندگی — ضریب پرداخت</h6>
+                <span class="small text-muted">محور X: شماره نمونه، محور Y: ضریب</span>
+              </div>
+              <div class="control-chart-container">
+                <canvas id="scatterChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- KPI Cards -->
+  <section class="kpi-section mb-5">
+    <div class="row g-4">
+      {% for kpi in kpis %}
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center shadow-sm p-4 rounded-4">
+          <div class="position-relative">
+            <canvas id="{{ kpi.canvas_id }}" width="100" height="100"></canvas>
+            <div class="kpi-center-text position-absolute top-50 start-50 translate-middle fw-bold text-dark">{{ kpi.value }}%</div>
+          </div>
+          <div class="fw-semibold text-primary mt-3">{{ kpi.label }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- Project List -->
+  <section class="project-list mb-5">
+    <div class="row g-4">
+      {% for project in user_projects %}
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="card project-card border-0 shadow-lg rounded-4 overflow-hidden main-project-card" data-project-id="{{ project.id }}">
+          <div class="card-header bg-gradient text-white d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">{{ project.name }}</h6>
+            <div class="d-flex align-items-center gap-2">
+              {% if sub_projects_dict|get_item:project.id %}
+              <button class="btn btn-sm btn-light toggle-sub-projects" type="button" data-project-id="{{ project.id }}" title="نمایش زیرپروژه‌ها">
+                <i class="bi bi-chevron-down" id="icon-{{ project.id }}"></i>
+              </button>
+              {% endif %}
+              <span class="badge bg-light text-dark fw-bold">{% if project.status == 'active' %}در حال اجرا{% else %}تکمیل شده{% endif %}</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="progress mb-3" style="height: 12px; border-radius: 6px;">
+              <div class="progress-bar bg-success" role="progressbar" style="width: {{ project.progress }}%;">
+                {{ project.progress }}%
+              </div>
+            </div>
+            <div class="mb-3">
+              {% for role in project.roles %}
+                <span class="badge bg-outline-primary border text-dark fw-light">{{ role }}</span>
+              {% endfor %}
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              {% for access in project.accesses %}
+                <a href="{{ access.url }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">{{ access.name }}</a>
+              {% endfor %}
+            </div>
+          </div>
+          <!-- زیرپروژه‌ها -->
+          {% if sub_projects_dict|get_item:project.id %}
+          <div class="sub-projects-container" id="sub-projects-{{ project.id }}" style="display: none;">
+            <div class="card-body border-top bg-light">
+              <h6 class="fw-bold mb-3">زیرپروژه‌ها:</h6>
+              <div class="row g-3">
+                {% for sub_project in sub_projects_dict|get_item:project.id %}
+                <div class="col-12">
+                  <div class="card sub-project-card border shadow-sm rounded-3">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                      <h6 class="mb-0 small">{{ sub_project.name }}</h6>
+                      <span class="badge bg-secondary small">{% if sub_project.status == 'active' %}در حال اجرا{% else %}تکمیل شده{% endif %}</span>
+                    </div>
+                    <div class="card-body p-3">
+                      <div class="progress mb-2" style="height: 8px; border-radius: 4px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ sub_project.progress }}%;">
+                        </div>
+                      </div>
+                      <div class="d-flex flex-wrap gap-2">
+                        {% for access in sub_project.accesses %}
+                          <a href="{{ access.url }}" class="btn btn-sm btn-outline-primary rounded-pill px-2">{{ access.name }}</a>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12">
+        <div class="alert alert-warning text-center">پروژه‌ای برای شما تعریف نشده است.</div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- Experiments -->
+  <section class="row g-4">
+    <div class="col-12">
+      <div class="card shadow rounded-4">
+        <div class="card-header bg-gradient text-white d-flex align-items-center">
+          <i class="bi bi-beaker me-2"></i>
+          <strong class="fs-6">آخرین درخواست‌های آزمایش</strong>
+        </div>
+        <div class="card-body p-0">
+          {% if latest_experiments %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 table-striped">
+              <thead class="table-light">
+                <tr>
+                  <th>پروژه</th>
+                  <th>شماره اردر</th>
+                  <th>نوع آزمایش</th>
+                  <th>وضعیت</th>
+                  <th>تاریخ</th>
+                  <th>فایل</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for exp in latest_experiments %}
+                <tr>
+                  <td>{{ exp.project }}</td>
+                  <td>{{ exp.order }}</td>
+                  <td>{{ exp.type }}</td>
+                  <td><span class="badge bg-secondary">{{ exp.status }}</span></td>
+                  <td>{{ exp.created_at|date:'Y-m-d' }}</td>
+                  <td>{% if exp.request_file %}<a href="{{ exp.request_file }}" target="_blank">📎</a>{% else %}-{% endif %}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="alert alert-info text-center">هیچ درخواستی ثبت نشده است.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+<style>
+.dashboard-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(255, 255, 255, 0.85);
+  z-index: -1;
+}
+.dashboard-hero-card .avatar {
+  width: 70px;
+  height: 70px;
+  font-size: 2.5rem;
+}
+.dashboard-hero {
+  position: relative;
+  overflow: hidden;
+}
+.dashboard-title {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-shadow: 0 4px 18px rgba(0,0,0,0.2);
+}
+.dashboard-title-small {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.avatar-small {
+  width: 45px;
+  height: 45px;
+  font-size: 1.5rem;
+}
+.dashboard-stat-chip-small {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(6px);
+  font-size: 0.85rem;
+}
+.chart-card {
+  padding: 0.5rem;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+.chart-card:hover {
+  background-color: #f8f9fa;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.chart-card canvas {
+  max-width: 100px;
+  max-height: 100px;
+  width: 100px !important;
+  height: 100px !important;
+  cursor: pointer;
+}
+.chart-clickable {
+  cursor: pointer;
+}
+.dashboard-xy-section .card-body {
+  display: block;
+}
+.stat-chart-panel {
+  background: #ffffff;
+  border: 1px solid rgba(25, 118, 210, 0.08);
+  border-radius: 8px;
+  padding: 1rem;
+}
+.control-chart-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.control-chart-subtitle {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+.control-chart-container {
+  position: relative;
+  width: 100%;
+  height: 280px;
+}
+.control-chart-container-sm {
+  height: 200px;
+}
+.xy-chart-panel {
+  background: #ffffff;
+  border: 1px solid rgba(25, 118, 210, 0.08);
+  border-radius: 8px;
+  padding: 1rem;
+}
+.xy-chart-container {
+  position: relative;
+  width: 100%;
+  height: 320px;
+}
+.dashboard-stat-chip {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(6px);
+}
+.dashboard-hero-card .bg-white {
+  border-top: 1px solid rgba(25, 118, 210, 0.08);
+}
+.project-list {
+  margin-top: -2rem;
+}
+.project-list .row {
+  padding-top: 2.5rem;
+}
+.avatar {
+  width: 60px; height: 60px;
+  font-size: 2rem;
+}
+.bg-gradient {
+  background: linear-gradient(135deg, #1976d2 0%, #43a047 100%) !important;
+}
+.bg-gradient-primary {
+  background: linear-gradient(to right, #1976d2, #43a047) !important;
+}
+.kpi-center-text {
+  font-size: 1.05rem;
+  z-index: 2;
+}
+.project-card {
+  transition: all 0.3s ease;
+}
+.project-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+.sub-project-card {
+  transition: all 0.2s ease;
+}
+.sub-project-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.toggle-sub-projects {
+  padding: 0.25rem 0.5rem;
+  transition: transform 0.3s ease;
+}
+.toggle-sub-projects.rotated {
+  transform: rotate(180deg);
+}
+</style>
+<script src="{% static 'js/chart.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const toggleButtons = document.querySelectorAll('.toggle-sub-projects');
+  toggleButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const projectId = this.getAttribute('data-project-id');
+      const subProjectsContainer = document.getElementById('sub-projects-' + projectId);
+      const icon = document.getElementById('icon-' + projectId);
+      
+      if (subProjectsContainer.style.display === 'none') {
+        subProjectsContainer.style.display = 'block';
+        icon.classList.add('bi-chevron-up');
+        icon.classList.remove('bi-chevron-down');
+        this.classList.add('rotated');
+      } else {
+        subProjectsContainer.style.display = 'none';
+        icon.classList.add('bi-chevron-down');
+        icon.classList.remove('bi-chevron-up');
+        this.classList.remove('rotated');
+      }
+    });
+  });
+
+  // اضافه کردن قابلیت کلیک به کل کارت نمودار
+  document.querySelectorAll('.chart-clickable').forEach(card => {
+    card.addEventListener('click', function(e) {
+      // اگر روی لینک کلیک نشده باشد
+      if (e.target.tagName !== 'A' && e.target.tagName !== 'BUTTON') {
+        const url = this.getAttribute('data-url');
+        if (url) {
+          window.location.href = url;
+        }
+      }
+    });
+  });
+
+  // تابع برای ایجاد نمودار دایره‌ای با قابلیت کلیک
+  function createDoughnutChart(canvasId, value, total, color, label, clickUrl) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    
+    // اگر total صفر یا منفی باشد، از 1 استفاده می‌کنیم
+    const safeTotal = Math.max(total, 1);
+    const percentage = safeTotal > 0 ? Math.round((value / safeTotal) * 100) : 0;
+    const remaining = 100 - percentage;
+    
+    // اگر value صفر باشد، نمودار را با رنگ خاکستری نمایش می‌دهیم
+    const chartColor = value > 0 ? color : '#CCCCCC';
+    
+    const chart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: [label, 'باقیمانده'],
+        datasets: [{
+          data: [percentage, remaining],
+          backgroundColor: [chartColor, '#E0E0E0'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: '70%',
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            enabled: true,
+            callbacks: {
+              label: function(context) {
+                if (context.dataIndex === 0) {
+                  return label + ': ' + value + ' (' + percentage + '%)';
+                }
+                return 'باقیمانده: ' + remaining + '%';
+              }
+            }
+          }
+        },
+        onClick: function(event, elements) {
+          if (elements.length > 0 && clickUrl) {
+            window.location.href = clickUrl;
+          }
+        },
+        onHover: function(event, elements) {
+          if (elements.length > 0 && clickUrl) {
+            event.native.target.style.cursor = 'pointer';
+          }
+        }
+      },
+      plugins: [{
+        id: 'centerText',
+        beforeDraw: function(chart) {
+          const ctx = chart.ctx;
+          const centerX = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2;
+          const centerY = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2;
+          
+          ctx.save();
+          ctx.font = 'bold 14px Arial';
+          ctx.fillStyle = '#333';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(percentage + '%', centerX, centerY);
+          ctx.restore();
+        }
+      }]
+    });
+    
+    return chart;
+  }
+
+  // نمودارهای وضعیت آزمایشات برای هر پروژه
+  {% for project_stat in projects_stats %}
+  (function() {
+    const projectId = {{ project_stat.project.id }};
+    const acceptable = {{ project_stat.stats.acceptable }};
+    const recompact = {{ project_stat.stats.recompact }};
+    const rejected = {{ project_stat.stats.rejected }};
+    const inProgress = {{ project_stat.stats.in_progress }};
+    const pending = {{ project_stat.stats.pending }};
+    const total = {{ project_stat.total }};
+    
+    createDoughnutChart('experimentCompletedChart-' + projectId, acceptable, total, '#4CAF50', 'قابل قبول');
+    createDoughnutChart('experimentRecompactChart-' + projectId, recompact, total, '#9C27B0', 'ری‌کامپکت'); // بنفش
+    createDoughnutChart('experimentRejectedChart-' + projectId, rejected, total, '#F44336', 'رد شده');
+    createDoughnutChart('experimentInProgressChart-' + projectId, inProgress, total, '#2196F3', 'در حال انجام');
+    createDoughnutChart('experimentPendingChart-' + projectId, pending, total, '#FF9800', 'در انتظار بررسی');
+  })();
+  {% endfor %}
+  
+  // نمودارهای کلی (اگر پروژه‌ای انتخاب نشده باشد)
+  {% if not selected_project_id and not projects_stats %}
+  const totalExperiments = {{ total_experiments }};
+  createDoughnutChart('experimentCompletedChart', {{ experiment_status_data.acceptable }}, totalExperiments, '#4CAF50', 'قابل قبول');
+  createDoughnutChart('experimentRecompactChart', {{ experiment_status_data.recompact }}, totalExperiments, '#9C27B0', 'ری‌کامپکت'); // بنفش
+  createDoughnutChart('experimentRejectedChart', {{ experiment_status_data.rejected }}, totalExperiments, '#F44336', 'رد شده');
+  createDoughnutChart('experimentInProgressChart', {{ experiment_status_data.in_progress }}, totalExperiments, '#2196F3', 'در حال انجام');
+  createDoughnutChart('experimentPendingChart', {{ experiment_status_data.pending }}, totalExperiments, '#FF9800', 'در انتظار بررسی');
+  {% endif %}
+
+  // نمودارهای حجم برای هر پروژه
+  {% for project_stat in projects_stats %}
+  (function() {
+    const projectId = {{ project_stat.project.id }};
+    const embankmentVol = {{ project_stat.volume.embankment|default:0 }};
+    const concreteVol = {{ project_stat.volume.concrete|default:0 }};
+    const asphaltVol = {{ project_stat.volume.asphalt|default:0 }};
+    const volumeTotal = Math.max(embankmentVol + concreteVol + asphaltVol, 1);
+    
+    createDoughnutChart('volumeEmbankmentChart-' + projectId, embankmentVol, volumeTotal, '#9C27B0', 'خاکریزی');
+    createDoughnutChart('volumeConcreteChart-' + projectId, concreteVol, volumeTotal, '#FF9800', 'بتن ریزی');
+    createDoughnutChart('volumeAsphaltChart-' + projectId, asphaltVol, volumeTotal, '#2196F3', 'آسفالت');
+  })();
+  {% endfor %}
+  
+  // نمودارهای حجم کلی (اگر پروژه‌ای وجود نداشت)
+  {% if not projects_stats %}
+  const totalVolume = Math.max({{ total_volume|default:0 }}, 1);
+  const embankmentVolume = {{ volume_data.embankment|default:0 }};
+  const concreteVolume = {{ volume_data.concrete|default:0 }};
+  const asphaltVolume = {{ volume_data.asphalt|default:0 }};
+  const totalVolumeSum = embankmentVolume + concreteVolume + asphaltVolume;
+  const volumeTotal = Math.max(totalVolumeSum, 1);
+  
+  createDoughnutChart('volumeEmbankmentChart', embankmentVolume, volumeTotal, '#9C27B0', 'خاکریزی');
+  createDoughnutChart('volumeConcreteChart', concreteVolume, volumeTotal, '#FF9800', 'بتن ریزی');
+  createDoughnutChart('volumeAsphaltChart', asphaltVolume, volumeTotal, '#2196F3', 'آسفالت');
+  {% endif %}
+
+  const statisticalCharts = {{ statistical_charts_json|safe }};
+
+  function formatStats(stats) {
+    if (!stats) return '';
+    return 'Mean: ' + stats.mean + ' | StDev: ' + stats.stdev + ' | N: ' + stats.n;
+  }
+
+  function createControlLineChart(canvasId, labels, values, limits, yTitle) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx || !values) return;
+
+    const uclData = labels.map(function() { return limits.ucl; });
+    const clData = labels.map(function() { return limits.cl; });
+    const lclData = labels.map(function() { return limits.lcl; });
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'UCL',
+            data: uclData,
+            borderColor: 'rgba(211, 47, 47, 0.9)',
+            borderWidth: 2,
+            borderDash: [6, 4],
+            pointRadius: 0,
+            fill: false
+          },
+          {
+            label: 'CL',
+            data: clData,
+            borderColor: 'rgba(33, 33, 33, 0.85)',
+            borderWidth: 2,
+            pointRadius: 0,
+            fill: false
+          },
+          {
+            label: 'LCL',
+            data: lclData,
+            borderColor: 'rgba(211, 47, 47, 0.9)',
+            borderWidth: 2,
+            borderDash: [6, 4],
+            pointRadius: 0,
+            fill: false
+          },
+          {
+            label: yTitle,
+            data: values,
+            borderColor: 'rgba(25, 118, 210, 1)',
+            backgroundColor: 'rgba(25, 118, 210, 0.15)',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointBackgroundColor: 'rgba(25, 118, 210, 1)',
+            tension: 0,
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { boxWidth: 12, font: { size: 11 } }
+          }
+        },
+        scales: {
+          y: {
+            grid: { color: 'rgba(0,0,0,0.08)' },
+            title: { display: true, text: yTitle, font: { size: 11 } }
+          },
+          x: {
+            title: { display: true, text: 'شماره زیرگروه', font: { size: 11 } },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  function createHistogramChart(canvasId, histogramData) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx || !histogramData) return;
+
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: histogramData.labels,
+        datasets: [
+          {
+            label: 'فراوانی',
+            data: histogramData.counts,
+            backgroundColor: 'rgba(25, 118, 210, 0.55)',
+            borderColor: 'rgba(25, 118, 210, 0.85)',
+            borderWidth: 1,
+            order: 2
+          },
+          {
+            label: 'توزیع نرمال',
+            type: 'line',
+            data: histogramData.normal_curve,
+            borderColor: 'rgba(211, 47, 47, 0.95)',
+            backgroundColor: 'transparent',
+            borderWidth: 2.5,
+            pointRadius: 0,
+            tension: 0.4,
+            order: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12 } }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: 'Frequency' },
+            grid: { color: 'rgba(0,0,0,0.08)' }
+          },
+          x: {
+            title: { display: true, text: 'درصد جریمه' },
+            grid: { display: false },
+            ticks: { maxRotation: 45, minRotation: 0, font: { size: 10 } }
+          }
+        }
+      }
+    });
+  }
+
+  function createScatterChart(canvasId, scatterData) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx || !scatterData) return;
+
+    const datasets = [
+      {
+        label: 'ضریب پرداخت',
+        data: scatterData.points,
+        backgroundColor: 'rgba(25, 118, 210, 0.75)',
+        borderColor: 'rgba(25, 118, 210, 1)',
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        showLine: false
+      }
+    ];
+
+    if (scatterData.regression && scatterData.regression.length === 2) {
+      datasets.push({
+        label: 'خط رگرسیون',
+        data: scatterData.regression,
+        type: 'line',
+        borderColor: 'rgba(211, 47, 47, 0.95)',
+        backgroundColor: 'transparent',
+        borderWidth: 2.5,
+        pointRadius: 0,
+        fill: false
+      });
+    }
+
+    new Chart(ctx, {
+      type: 'scatter',
+      data: { datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12 } }
+        },
+        scales: {
+          y: {
+            title: { display: true, text: 'ضریب پرداخت' },
+            grid: { color: 'rgba(0,0,0,0.08)' }
+          },
+          x: {
+            title: { display: true, text: 'شماره نمونه (No.)' },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  if (statisticalCharts.xbar_r) {
+    const xbarR = statisticalCharts.xbar_r;
+    document.getElementById('xbarRStats').textContent = formatStats(xbarR.stats);
+    createControlLineChart('xbarRMeanChart', xbarR.labels, xbarR.xbar, xbarR.xbar_limits, 'میانگین');
+    createControlLineChart('xbarRRangeChart', xbarR.labels, xbarR.r, xbarR.r_limits, 'دامنه');
+  }
+
+  if (statisticalCharts.xbar_s) {
+    const xbarS = statisticalCharts.xbar_s;
+    document.getElementById('xbarSStats').textContent = formatStats(xbarS.stats);
+    createControlLineChart('xbarSMeanChart', xbarS.labels, xbarS.xbar, xbarS.xbar_limits, 'میانگین (%)');
+    createControlLineChart('xbarSStdChart', xbarS.labels, xbarS.s, xbarS.s_limits, 'انحراف معیار');
+  }
+
+  if (statisticalCharts.histogram) {
+    document.getElementById('histogramStats').textContent = formatStats(statisticalCharts.histogram.stats);
+    createHistogramChart('histogramChart', statisticalCharts.histogram);
+  }
+
+  if (statisticalCharts.scatter) {
+    createScatterChart('scatterChart', statisticalCharts.scatter);
+  }
+
+});
+</script>
+<script src="{% static 'js/jquery.min.js' %}"></script>
+<script src="{% static 'js/persian-date.min.js' %}"></script>
+<script src="{% static 'js/persian-datepicker.min.js' %}"></script>
+<script>
+$(document).ready(function() {
+  // راه‌اندازی date picker برای فیلتر تقویمی
+  function initDatePickers() {
+    $('.jalali_date-input').persianDatepicker({
+      format: 'YYYY/MM/DD',
+      initialValue: false,
+      autoClose: true,
+      position: 'auto',
+      calendar: {
+        persian: {
+          locale: 'fa'
+        }
+      }
+    });
+  }
+  
+  // راه‌اندازی اولیه
+  initDatePickers();
+  
+  // در صورت اضافه شدن inputهای جدید، دوباره راه‌اندازی شود
+  $(document).on('focus', '.jalali_date-input', function() {
+    if (!$(this).data('persianDatepicker')) {
+      $(this).persianDatepicker({
+        format: 'YYYY/MM/DD',
+        initialValue: false,
+        autoClose: true,
+        position: 'auto',
+        calendar: {
+          persian: {
+            locale: 'fa'
+          }
+        }
+      });
+    }
+  });
+});
+</script>
+{% endblock %}

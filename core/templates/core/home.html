@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}صفحه اصلی{% endblock %}
+
+{% block head %}
+{% comment %} Font Vazirmatn removed - using system fonts instead {% endcomment %}
+<style>
+body, html {
+    font-family: 'Vazirmatn', 'IRANSans', sans-serif !important;
+    background: #e9f0f7;
+}
+.welcome-section {
+    text-align: center;
+    padding: 32px 0 18px 0;
+    background: none;
+    margin-bottom: 24px;
+}
+.welcome-title {
+    font-size: 2.3rem;
+    color: #2c3e50;
+    font-weight: 700;
+    margin-bottom: 8px;
+    font-family: 'Vazirmatn', 'IRANSans', sans-serif !important;
+}
+.welcome-subtitle {
+    color: #4a6073;
+    font-size: 1.1rem;
+    font-family: 'Vazirmatn', 'IRANSans', sans-serif !important;
+}
+.charts-container {
+    background: rgba(255,255,255,0.25);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(44,62,80,0.10);
+    padding: 2rem 1rem;
+    margin-bottom: 2rem;
+    overflow-x: auto;    /* فعال کردن اسکرول افقی */
+    overflow-y: hidden;  /* جلوگیری از اسکرول عمودی */
+}
+.charts-wrapper {
+    display: flex;
+    gap: 24px;
+    min-width: max-content;  /* اجازه میده عرضش به اندازه محتوا باشه، جلوگیری از شکست خط */
+    flex-wrap: nowrap;       /* جلوگیری از افتادن آیتم ها زیر هم */
+}
+.chart-card {
+    background: rgba(255,255,255,0.75) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 6px 24px rgba(44,62,80,0.08) !important;
+    transition: box-shadow 0.3s, transform 0.3s;
+    min-width: 320px;
+    margin: 0 8px;
+    border: none;
+    padding: 1.5rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.chart-card:hover {
+    box-shadow: 0 12px 32px rgba(44,62,80,0.16) !important;
+    transform: translateY(-4px) scale(1.02);
+}
+.chart-title {
+    font-family: 'Vazirmatn', 'IRANSans', sans-serif !important;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+.chart-container {
+    height: 220px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.card {  /* این رو هم برای کارت کیفیت آزمایشات اضافه کردم چون استایل chart-card رو نداشت */
+    background: rgba(255,255,255,0.75);
+    border-radius: 20px;
+    box-shadow: 0 6px 24px rgba(44,62,80,0.08);
+    margin: 0 8px;
+    padding: 1.5rem 1.2rem;
+    min-width: 320px;
+    display: flex;
+    flex-direction: column;
+}
+.card-header {
+    border-bottom: none;
+    margin-bottom: 1rem;
+}
+.card-title {
+    font-family: 'Vazirmatn', 'IRANSans', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #2c3e50;
+    text-align: center;
+}
+.card-body {
+    height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+::-webkit-scrollbar {
+    height: 8px;
+    background: #e9f0f7;
+    border-radius: 8px;
+}
+::-webkit-scrollbar-thumb {
+    background: #b0c4d6;
+    border-radius: 8px;
+}
+</style>
+{% endblock %}
+
+{% block main %}
+<div class="container-fluid px-4">
+    <div class="welcome-section">
+        <h1 class="welcome-title">سامانه کنترل کیفیت</h1>
+        <p class="welcome-subtitle">مدیریت هوشمند پروژه‌های عمرانی</p>
+    </div>
+    <!-- نمودارهای ضرایب پرداخت -->
+    <div class="charts-container">
+      <div class="row justify-content-center">
+        <div class="col-md-3 col-12 mb-4">
+          <div class="chart-card h-100">
+            <h3 class="chart-title" style="color:#9C27B0;">میانگین ضریب پرداخت لایه خاکریزی</h3>
+            <div class="chart-container">
+              <canvas id="embankmentCoefficientChart"></canvas>
+            </div>
+            <div class="text-center mt-2">
+              <h4 class="mb-0" style="color:#9C27B0;">{{ payment_coefficients.embankment.avg }}</h4>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 col-12 mb-4">
+          <div class="chart-card h-100">
+            <h3 class="chart-title" style="color:#FF9800;">میانگین ضریب پرداخت لایه زیر اساس</h3>
+            <div class="chart-container">
+              <canvas id="subbaseCoefficientChart"></canvas>
+            </div>
+            <div class="text-center mt-2">
+              <h4 class="mb-0" style="color:#FF9800;">{{ payment_coefficients.subbase.avg }}</h4>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 col-12 mb-4">
+          <div class="chart-card h-100">
+            <h3 class="chart-title" style="color:#4CAF50;">میانگین ضریب پرداخت لایه اساس</h3>
+            <div class="chart-container">
+              <canvas id="baseCoefficientChart"></canvas>
+            </div>
+            <div class="text-center mt-2">
+              <h4 class="mb-0" style="color:#4CAF50;">{{ payment_coefficients.base.avg }}</h4>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 col-12 mb-4">
+          <div class="chart-card h-100">
+            <h3 class="chart-title" style="color:#2196F3;">میانگین ضریب پرداخت لایه آسفالت گرم</h3>
+            <div class="chart-container">
+              <canvas id="asphaltCoefficientChart"></canvas>
+            </div>
+            <div class="text-center mt-2">
+              <h4 class="mb-0" style="color:#2196F3;">{{ payment_coefficients.asphalt.avg }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+</div>
+<script src="{% static 'js/chart.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // نمودارهای ضرایب پرداخت - استفاده از نمودار Gauge برای نمایش بهتر
+    const maxCoefficient = 1.2;
+    
+    // ذخیره اطلاعات نمودارها برای استفاده در پلاگین
+    const chartData = {};
+    
+    // پلاگین برای نمایش متن در مرکز نمودار
+    const gaugeTextPlugin = {
+        id: 'gaugeText',
+        afterDraw: function(chart) {
+            const canvasId = chart.canvas.id;
+            if (chartData[canvasId]) {
+                const { value, color, maxValue } = chartData[canvasId];
+                const ctx = chart.ctx;
+                const centerX = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2;
+                const centerY = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2;
+                
+                ctx.save();
+                ctx.font = 'bold 28px IRANSans';
+                ctx.fillStyle = color;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(value.toFixed(2), centerX, centerY);
+                
+                ctx.restore();
+            }
+        }
+    };
+    
+    // ثبت پلاگین
+    Chart.register(gaugeTextPlugin);
+    
+    function createGaugeChart(canvasId, value, color, maxValue) {
+        const percentage = (value / maxValue) * 100;
+        const remaining = 100 - percentage;
+        
+        // ذخیره اطلاعات برای استفاده در پلاگین
+        chartData[canvasId] = { value, color, maxValue };
+        
+        const chart = new Chart(document.getElementById(canvasId), {
+            type: 'doughnut',
+            data: {
+                labels: ['مقدار', 'باقیمانده تا حداکثر'],
+                datasets: [{
+                    data: [percentage, remaining],
+                    backgroundColor: [color, '#E0E0E0'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: true,
+                        callbacks: {
+                            label: function(context) {
+                                if (context.dataIndex === 0) {
+                                    return 'مقدار: ' + value.toFixed(2) + ' (' + percentage.toFixed(1) + '%)';
+                                }
+                                return 'باقیمانده: ' + (maxValue - value).toFixed(2);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        return chart;
+    }
+
+    // نمودار ضریب پرداخت خاکریزی
+    createGaugeChart('embankmentCoefficientChart', {{ payment_coefficients.embankment.avg }}, '#9C27B0', maxCoefficient);
+
+    // نمودار ضریب پرداخت زیر اساس
+    createGaugeChart('subbaseCoefficientChart', {{ payment_coefficients.subbase.avg }}, '#FF9800', maxCoefficient);
+
+    // نمودار ضریب پرداخت اساس
+    createGaugeChart('baseCoefficientChart', {{ payment_coefficients.base.avg }}, '#4CAF50', maxCoefficient);
+
+    // نمودار ضریب پرداخت آسفالت گرم
+    createGaugeChart('asphaltCoefficientChart', {{ payment_coefficients.asphalt.avg }}, '#2196F3', maxCoefficient);
+});
+</script>
+{% endblock %}

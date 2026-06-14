@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block head %}
+<link href="{% static 'css/select2.min.css' %}" rel="stylesheet" />
+<link href="{% static 'css/select2-bootstrap4.min.css' %}" rel="stylesheet" />
+{% endblock %}
+
+{% block title %}لیست درخواست‌های آزمایش{% endblock %}
+
+{% block main %}
+<div class="container-fluid py-4">
+    <div class="page-toolbar">
+        <button type="button" class="btn btn-outline-secondary rounded-pill page-back-btn" onclick="history.back()">
+            <i class="bi bi-arrow-right me-2"></i>بازگشت
+        </button>
+        <div class="page-toolbar-actions">
+            <a href="{% url 'experiment:experiment_request_create' %}" class="btn btn-success rounded-pill px-4">
+                <i class="fas fa-plus"></i> ثبت درخواست جدید
+            </a>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h3 class="card-title">لیست درخواست‌های آزمایش</h3>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="mb-4">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="project">پروژه</label>
+                                    <select name="project" id="project" class="form-select">
+                                        <option value="">همه</option>
+                                        {% for project in projects %}
+                                        <option value="{{ project.id }}" {% if selected_project == project.id|stringformat:"s" %}selected{% endif %}>
+                                            {{ project.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="status">وضعیت</label>
+                                    <select name="status" id="status" class="form-select">
+                                        <option value="">همه</option>
+                                        <option value="0" {% if selected_status == "0" %}selected{% endif %}>در انتظار بررسی</option>
+                                        <option value="1" {% if selected_status == "1" %}selected{% endif %}>در حال انجام</option>
+                                        <option value="2" {% if selected_status == "2" %}selected{% endif %}>تکمیل شده</option>
+                                        <option value="3" {% if selected_status == "3" %}selected{% endif %}>رد شده</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="search">جستجو</label>
+                                    <input type="text" name="search" id="search" class="form-control" placeholder="جستجو در توضیحات یا نام پروژه..." value="{{ search_query|default_if_none:'' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group d-flex flex-column align-items-stretch">
+                                    <label>&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary w-100 mb-2">
+                                        <i class="fas fa-search"></i> جستجو
+                                    </button>
+                                    <a href="{% url 'experiment:experiment_request_list' %}" class="btn btn-outline-secondary w-100">
+                                        پاک کردن فیلترها
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>شماره درخواست</th>
+                                    <th>پروژه</th>
+                                    <th>لایه</th>
+                                    <th>نوع آزمایش / آزمایش</th>
+                                    <th>تاریخ درخواست</th>
+                                    <th>وضعیت</th>
+                                    <th>عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for request in experiment_requests %}
+                                <tr>
+                                    <td>{{ request.order }}</td>
+                                    <td>{{ request.project.name }}</td>
+                                    <td>
+                                      {{ request.layer_display_name|default:"-" }}
+                                    </td>
+                                    <td>
+                                        {% for t in request.experiment_type.all %}
+                                            <span class="badge bg-primary">{{ t.name }}</span>{% if not forloop.last %}، {% endif %}
+                                        {% empty %}{% endfor %}
+                                        <br>
+                                        {% for st in request.experiment_subtype.all %}
+                                            <span class="badge bg-info">{{ st.name }}</span>{% if not forloop.last %}، {% endif %}
+                                        {% empty %}{% endfor %}
+                                    </td>
+                                    <td>{{ request.request_date|date:"Y/m/d" }}</td>
+                                    <td>
+                                        {% with actual_status=request.get_actual_status %}
+                                            {% if actual_status == 0 %}
+                                            <span class="badge bg-warning">در انتظار بررسی</span>
+                                            {% elif actual_status == 1 %}
+                                            <span class="badge bg-info">در حال انجام</span>
+                                            {% elif actual_status == 2 %}
+                                            <span class="badge bg-success">تکمیل شده</span>
+                                            {% elif actual_status == 3 %}
+                                            <span class="badge bg-danger">رد شده</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">{{ request.get_status_display }}</span>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'experiment:experiment_request_detail' request.pk %}" class="btn btn-info btn-sm">
+                                            <i class="fas fa-eye"></i> جزئیات
+                                        </a>
+                                        <a href="{% url 'experiment:experiment_request_update' request.pk %}" class="btn btn-warning btn-sm">
+                                            <i class="fas fa-edit"></i> ویرایش
+                                        </a>
+                                        <a href="{% url 'experiment:experiment_request_delete' request.pk %}" class="btn btn-danger btn-sm">
+                                            <i class="fas fa-trash"></i> حذف
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center">هیچ درخواست آزمایشی یافت نشد.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if page_obj.has_other_pages %}
+                    <div class="card-footer bg-light">
+                        <nav aria-label="صفحه‌بندی درخواست‌های آزمایش">
+                            <ul class="pagination justify-content-center mb-0">
+                                {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if selected_project %}&project={{ selected_project }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" aria-label="قبلی">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link" aria-label="قبلی">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </span>
+                                </li>
+                                {% endif %}
+                                
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}{% if selected_project %}&project={{ selected_project }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if selected_project %}&project={{ selected_project }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" aria-label="بعدی">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link" aria-label="بعدی">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </span>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        <div class="text-center mt-3 text-muted">
+                            <small>نمایش {{ page_obj.start_index }} تا {{ page_obj.end_index }} از {{ page_obj.paginator.count }} درخواست</small>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/select2.min.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize Select2 on all select elements
+    $('.select2').select2({
+        theme: 'bootstrap4',
+        width: '100%'
+    });
+    
+    // اطمینان از اینکه فرم به درستی submit می‌شود
+    $('form').on('submit', function(e) {
+        // بررسی اینکه آیا فیلترها تغییر کرده‌اند
+        var project = $('#project').val();
+        var status = $('#status').val();
+        var search = $('#search').val();
+        console.log('Form submit - project:', project, 'status:', status, 'search:', search);
+    });
+    
+    // تغییر خودکار فیلترها (اختیاری - برای UX بهتر)
+    // $('#project, #status').on('change', function() {
+    //     $('form').submit();
+    // });
+});
+</script>
+{% endblock %} 

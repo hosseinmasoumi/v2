@@ -1,0 +1,515 @@
+from django import forms
+from . import models
+from django_select2.forms import Select2Widget, Select2MultipleWidget
+from django_jalali.forms import jDateField
+from project.models import Project, ProjectLayer
+from jalali_date.fields import JalaliDateField
+from jalali_date.widgets import AdminJalaliDateWidget
+from django.forms import inlineformset_factory
+from collections import Counter, defaultdict
+
+class ExperimentRequestForm(forms.ModelForm):
+    request_date = JalaliDateField(
+        widget=AdminJalaliDateWidget,
+        label='تاریخ درخواست',
+        required=True
+    )
+    mix_design = forms.CharField(
+        label='طرح اختلاط',
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # تنظیم کلاس‌های فرم
+        for field in self.fields:
+            if isinstance(self.fields[field].widget, (forms.TextInput, forms.NumberInput, forms.Textarea)):
+                self.fields[field].widget.attrs['class'] = 'form-control form-control-sm'
+            elif isinstance(self.fields[field].widget, forms.Select):
+                self.fields[field].widget.attrs['class'] = 'form-select'
+        
+        # تنظیم ویجت‌های Select2 و queryset‌ها
+        self.fields['project'].widget = Select2Widget()
+        # فیلتر کردن پروژه‌ها بر اساس دسترسی کاربر
+        if user and not user.is_superuser:
+            # فقط پروژه‌هایی که کاربر به آن‌ها دسترسی دارد
+            self.fields['project'].queryset = user.accessible_projects.all()
+        else:
+            # superuser همه پروژه‌ها را می‌بیند
+            self.fields['project'].queryset = Project.objects.all()
+        
+        self.fields['layer'].widget = Select2Widget()
+        if self.instance.pk and self.instance.project:
+            layer_qs = self.instance.project.projectlayer_set.all()
+        else:
+            layer_qs = ProjectLayer.objects.none()
+        self._set_layer_queryset(layer_qs)
+        
+        self.fields['experiment_type'].widget = Select2MultipleWidget()
+        self.fields['experiment_type'].queryset = models.ExperimentType.objects.all()
+        self.fields['experiment_subtype'].widget = Select2MultipleWidget()
+        self.fields['experiment_subtype'].queryset = models.ExperimentSubType.objects.all()
+        
+        self.fields['concrete_place'].widget = Select2Widget()
+        self.fields['concrete_place'].queryset = models.ConcretePlace.objects.all()
+        
+        # فیلتر کردن لایه‌ها بر اساس پروژه انتخاب شده
+        if 'project' in self.data:
+            try:
+                project_id = int(self.data.get('project'))
+                layer_qs = ProjectLayer.objects.filter(project_id=project_id)
+                self._set_layer_queryset(layer_qs)
+            except (ValueError, TypeError):
+                pass
+        elif self.instance.pk and self.instance.project:
+            self._set_layer_queryset(self.instance.project.projectlayer_set.all())
+        
+        # فیلتر کردن زیرنوع‌ها بر اساس آزمایش انتخاب شده
+        if 'experiment_type' in self.data:
+            try:
+                experiment_type_id = int(self.data.get('experiment_type'))
+                self.fields['experiment_subtype'].queryset = models.ExperimentSubType.objects.filter(experiment_type_id=experiment_type_id)
+            except (ValueError, TypeError):
+                pass
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        experiment_types = cleaned_data.get('experiment_type')
+        experiment_subtypes = cleaned_data.get('experiment_subtype')
+        
+        # اگر هیچ آزمایشی انتخاب نشده باشد، اعتبارسنجی انجام نمی‌شود
+        if not experiment_types:
+            return cleaned_data
+        
+        # نام آزمایشات انتخاب شده را به صورت لیست رشته بگیر
+        type_names = [et.name for et in experiment_types]
+        subtype_names = [est.name for est in experiment_subtypes] if experiment_subtypes else []
+        
+        # اگر مقاومت فشاری بتن و ملات انتخاب شده باشد، محل بتن‌ریزی اجباری شود
+        if any('مقاومت فشاری بتن' in name for name in type_names):
+            if not cleaned_data.get('concrete_place'):
+                self.add_error('concrete_place', 'انتخاب محل بتن‌ریزی الزامی است.')
+        
+        # اگر آسفالت انتخاب شده باشد، طرح اختلاط اجباری شود
+        if any('آسفالت' in name for name in type_names):
+            if not cleaned_data.get('mix_design'):
+                self.add_error('mix_design', 'وارد کردن طرح اختلاط الزامی است.')
+        
+        # اگر "تراکم نسبی" انتخاب شده و زیرنوع "خاکریزی" انتخاب شده باشد، حد تراکم اجباری شود
+        if any('تراکم نسبی' in name for name in type_names) and \
+           any('خاکریزی' in name for name in subtype_names):
+            if not cleaned_data.get('target_density'):
+                self.add_error('target_density', 'وارد کردن حد تراکم الزامی است.')
+        
+        # اگر "مقاومت فشاری بتن و ملات" انتخاب شده و زیرنوع "ملات بنایی" انتخاب شده باشد، حد مقاومت فشاری اجباری شود
+        if any('مقاومت فشاری بتن' in name for name in type_names) and \
+           any('ملات بنایی' in name for name in subtype_names):
+            if not cleaned_data.get('target_strength'):
+                self.add_error('target_strength', 'وارد کردن حد مقاومت فشاری الزامی است.')
+
+        return cleaned_data
+    
+    def _set_layer_queryset(self, queryset):
+        self.fields['layer'].queryset = queryset
+        layer_labels = {}
+        type_counts = Counter(layer.layer_type.name for layer in queryset)
+        type_indices = defaultdict(int)
+
+        for layer in queryset:
+            name = layer.layer_type.name
+            if type_counts[name] > 1:
+                type_indices[name] += 1
+                layer_labels[layer.pk] = f"{name} {type_indices[name]}"
+            else:
+                layer_labels[layer.pk] = name
+
+        def label_from_instance(obj):
+            return layer_labels.get(obj.pk, obj.layer_type.name)
+
+        self.fields['layer'].label_from_instance = label_from_instance
+    
+    class Meta:
+        model = models.ExperimentRequest
+        fields = [
+            'project', 'layer', 'experiment_type', 'experiment_subtype',
+            'concrete_place', 'request_date',
+            'description', 'target_density', 'target_strength', 'request_file',
+            'mix_design',
+        ]
+        widgets = {
+            'request_date': forms.DateInput(attrs={'type': 'date'}),
+            'description': forms.Textarea(attrs={'rows': 3}),
+            'experiment_type': Select2MultipleWidget(),
+            'experiment_subtype': Select2MultipleWidget(),
+            'mix_design': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+class ExperimentRequestApprovalForm(forms.ModelForm):
+    approval_date = JalaliDateField(
+        widget=AdminJalaliDateWidget,
+        label='تاریخ تایید',
+        required=True
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # تنظیم کلاس‌های فرم
+        for field in self.fields:
+            if isinstance(self.fields[field].widget, (forms.TextInput, forms.NumberInput, forms.Textarea)):
+                self.fields[field].widget.attrs['class'] = 'form-control form-control-sm'
+            elif isinstance(self.fields[field].widget, forms.Select):
+                self.fields[field].widget.attrs['class'] = 'form-select'
+        
+        # تنظیم فیلدهای خاص
+        self.fields['experiment_request'].widget = forms.HiddenInput()
+        self.fields['status'].widget.attrs.update({'class': 'form-select'})
+        self.fields['description'].widget.attrs.update({'class': 'form-control', 'rows': 3})
+    
+    class Meta:
+        model = models.ExperimentRequestApproval
+        fields = ['experiment_request', 'status', 'approval_date', 'description']
+        widgets = {
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+class ExperimentResponseForm(forms.ModelForm):
+    response_date = JalaliDateField(
+        widget=AdminJalaliDateWidget,
+        label='تاریخ پاسخ',
+        required=True
+    )
+    
+    def __init__(self, *args, **kwargs):
+        self.experiment_request = kwargs.pop('experiment_request', None)
+        super().__init__(*args, **kwargs)
+        
+        # تنظیم کلاس‌های فرم
+        for field in self.fields:
+            if isinstance(self.fields[field].widget, (forms.TextInput, forms.NumberInput, forms.Textarea)):
+                self.fields[field].widget.attrs['class'] = 'form-control form-control-sm'
+            elif isinstance(self.fields[field].widget, forms.Select):
+                self.fields[field].widget.attrs['class'] = 'form-select'
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        
+        # اگر experiment_request موجود باشد، بررسی آزمایش
+        if self.experiment_request:
+            experiment_types = self.experiment_request.experiment_type.all()
+            type_names = [et.name for et in experiment_types]
+            
+            # بررسی برای مقاومت فشاری بتن و ملات
+            if any('مقاومت فشاری بتن' in name or 'مقاومت فشاری' in name for name in type_names):
+                strength1 = cleaned_data.get('strength_result1')
+                strength2 = cleaned_data.get('strength_result2')
+                strength3 = cleaned_data.get('strength_result3')
+                
+                if strength1 is None:
+                    self.add_error('strength_result1', 'برای آزمایش مقاومت فشاری بتن و ملات، وارد کردن مقاومت 1 الزامی است.')
+                if strength2 is None:
+                    self.add_error('strength_result2', 'برای آزمایش مقاومت فشاری بتن و ملات، وارد کردن مقاومت 2 الزامی است.')
+                if strength3 is None:
+                    self.add_error('strength_result3', 'برای آزمایش مقاومت فشاری بتن و ملات، وارد کردن مقاومت 3 الزامی است.')
+            
+            # بررسی برای تراکم نسبی
+            if any('تراکم نسبی' in name for name in type_names):
+                density = cleaned_data.get('density_result')
+                thickness = cleaned_data.get('thickness_result')
+                
+                if density is None:
+                    self.add_error('density_result', 'برای آزمایش تراکم نسبی، وارد کردن نتیجه تراکم الزامی است.')
+                if thickness is None:
+                    self.add_error('thickness_result', 'برای آزمایش تراکم نسبی، وارد کردن نتیجه ضخامت الزامی است.')
+        
+        return cleaned_data
+    
+    class Meta:
+        model = models.ExperimentResponse
+        fields = ['response_date', 'response_file', 'density_result', 'thickness_result', 
+                 'strength_result1', 'strength_result2', 'strength_result3', 'description']
+        widgets = {
+            'response_file': forms.FileInput(attrs={'class': 'form-control'}),
+            'density_result': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'thickness_result': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'strength_result1': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'strength_result2': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'strength_result3': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+class ExperimentApprovalForm(forms.ModelForm):
+    approval_date = JalaliDateField(
+        widget=AdminJalaliDateWidget,
+        label='تاریخ تایید',
+        required=True
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.user_roles = kwargs.pop('user_roles', [])
+        super().__init__(*args, **kwargs)
+        
+        # تنظیم کلاس‌های فرم
+        for field in self.fields:
+            if isinstance(self.fields[field].widget, (forms.TextInput, forms.NumberInput, forms.Textarea)):
+                self.fields[field].widget.attrs['class'] = 'form-control form-control-sm'
+            elif isinstance(self.fields[field].widget, forms.Select):
+                self.fields[field].widget.attrs['class'] = 'form-select'
+        
+        # تنظیم فیلدهای خاص
+        self.fields['experiment_response'].widget = forms.HiddenInput()
+        if 'role' in self.fields:
+            # اگر کاربر فقط یک نقش دارد، به صورت خودکار تنظیم می‌شود
+            if len(self.user_roles) == 1:
+                self.fields['role'].widget = forms.HiddenInput()
+                self.fields['role'].initial = self.user_roles[0]
+            else:
+                # اگر چند نقش دارد، باید انتخاب کند
+                self.fields['role'].widget = forms.Select(attrs={'class': 'form-select'})
+                self.fields['role'].choices = [(role, role) for role in self.user_roles]
+        self.fields['status'].widget.attrs.update({'class': 'form-select'})
+        self.fields['description'].widget.attrs.update({'class': 'form-control', 'rows': 3})
+        self.fields['penalty_percentage'].widget.attrs.update({'class': 'form-control'})
+    
+    class Meta:
+        model = models.ExperimentApproval
+        fields = ['experiment_response', 'role', 'status', 'approval_date', 'penalty_percentage', 'description']
+        widgets = {
+            'role': forms.HiddenInput(),  # به صورت پیش‌فرض مخفی است، در __init__ تنظیم می‌شود
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'penalty_percentage': forms.NumberInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+class PaymentCoefficientForm(forms.ModelForm):
+    calculation_date = JalaliDateField(
+        widget=AdminJalaliDateWidget,
+        label='تاریخ محاسبه',
+        required=True
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # تنظیم کلاس‌های فرم
+        for field in self.fields:
+            if isinstance(self.fields[field].widget, (forms.TextInput, forms.NumberInput, forms.Textarea)):
+                self.fields[field].widget.attrs['class'] = 'form-control form-control-sm'
+            elif isinstance(self.fields[field].widget, forms.Select):
+                self.fields[field].widget.attrs['class'] = 'form-select'
+        
+        # تنظیم محدودیت ضریب پرداخت
+        self.fields['coefficient'].widget.attrs.update({
+            'min': '0',
+            'max': '1.2',
+            'step': '0.01'
+        })
+    
+    class Meta:
+        model = models.PaymentCoefficient
+        fields = ['project', 'layer', 'coefficient', 'start_kilometer', 'end_kilometer', 'calculation_date']
+        widgets = {
+            'project': Select2Widget(attrs={'class': 'form-select'}),
+            'layer': forms.Select(attrs={'class': 'form-select'}),
+            'coefficient': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'start_kilometer': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'end_kilometer': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+        }
+    
+    def clean_coefficient(self):
+        coefficient = self.cleaned_data.get('coefficient')
+        if coefficient is not None:
+            if coefficient < 0 or coefficient > 1.2:
+                raise forms.ValidationError('ضریب پرداخت باید بین 0 تا 1.2 باشد.')
+        return coefficient
+
+class QualityCommissionForm(forms.ModelForm):
+    calculation_date = JalaliDateField(
+        widget=AdminJalaliDateWidget,
+        label='تاریخ محاسبه',
+        required=True
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        for field in self.fields:
+            if isinstance(self.fields[field].widget, (forms.TextInput, forms.NumberInput, forms.Textarea)):
+                self.fields[field].widget.attrs['class'] = 'form-control form-control-sm'
+            elif isinstance(self.fields[field].widget, forms.Select):
+                self.fields[field].widget.attrs['class'] = 'form-select'
+        
+        self.fields['coefficient'].widget.attrs.update({
+            'min': '0',
+            'max': '100',
+            'step': '0.01'
+        })
+    
+    class Meta:
+        model = models.QualityCommission
+        fields = ['project', 'layer', 'coefficient', 'start_kilometer', 'end_kilometer', 'calculation_date', 'description']
+        widgets = {
+            'project': Select2Widget(attrs={'class': 'form-select'}),
+            'layer': forms.Select(attrs={'class': 'form-select'}),
+            'coefficient': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'start_kilometer': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'end_kilometer': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+    
+    def clean_coefficient(self):
+        coefficient = self.cleaned_data.get('coefficient')
+        if coefficient is not None:
+            if coefficient < 0 or coefficient > 100:
+                raise forms.ValidationError('کمیسیون کیفیت باید بین 0 تا 100 درصد باشد.')
+        return coefficient
+
+class ExperimentTypeForm(forms.ModelForm):
+    class Meta:
+        model = models.ExperimentType
+        fields = ['name']
+
+class ExperimentSubTypeForm(forms.ModelForm):
+    class Meta:
+        model = models.ExperimentSubType
+        fields = ['name', 'experiment_type']
+
+class ConcretePlaceForm(forms.ModelForm):
+    class Meta:
+        model = models.ConcretePlace
+        fields = ['name'] 
+
+class AsphaltTestForm(forms.ModelForm):
+    """فرم آزمایش آسفالت با 8 فیلد طبق داکیومنت"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # تنظیم کلاس‌های فرم
+        for field in self.fields:
+            if isinstance(self.fields[field].widget, (forms.TextInput, forms.NumberInput)):
+                self.fields[field].widget.attrs['class'] = 'form-control form-control-sm'
+            elif isinstance(self.fields[field].widget, forms.Select):
+                self.fields[field].widget.attrs['class'] = 'form-select'
+    
+    class Meta:
+        model = models.AsphaltTest
+        fields = [
+            'layer_type', 
+            'bitumen_percentage', 
+            'fracture_percentage', 
+            'temperature',
+            'air_void_percentage', 
+            'vma_percentage', 
+            'vfa_percentage',
+            'filler_to_bitumen_ratio'
+        ]
+        widgets = {
+            'layer_type': forms.Select(attrs={'class': 'form-select'}),
+            'bitumen_percentage': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'fracture_percentage': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'temperature': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'air_void_percentage': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'vma_percentage': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'vfa_percentage': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'filler_to_bitumen_ratio': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+        }
+
+
+class AsphaltGradationForm(forms.ModelForm):
+    """فرم دانه‌بندی آسفالت (الک‌ها)"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # اگر مدل SieveSize موجود باشد، فیلد الک را به دراپ‌داون مبتنی بر آن تبدیل کن
+        try:
+            from .models import SieveSize
+            self.fields['sieve_size'] = forms.ModelChoiceField(
+                queryset=SieveSize.objects.all(),
+                label='اندازه الک',
+                required=True,
+                widget=forms.Select(attrs={'class': 'form-select'})
+            )
+            # مقدار اولیه را از مقدار متنی فعلی (در حالت ویرایش) پر کن
+            if self.instance and self.instance.pk and self.instance.sieve_size:
+                try:
+                    self.fields['sieve_size'].initial = SieveSize.objects.get(name=self.instance.sieve_size)
+                except SieveSize.DoesNotExist:
+                    pass
+        except Exception:
+            # در صورت نبود مدل یا خطا، همان TextInput بماند
+            self.fields['sieve_size'].widget.attrs['class'] = 'form-control form-control-sm'
+        self.fields['passing_percentage'].widget.attrs['class'] = 'form-control form-control-sm'
+        self.fields['passing_percentage'].widget.attrs['step'] = '0.01'
+    
+    def clean_sieve_size(self):
+        """اگر فیلد از نوع ModelChoiceField باشد، نام را به رشته ذخیره‌ای تبدیل می‌کنیم"""
+        value = self.cleaned_data.get('sieve_size')
+        try:
+            # اگر آبجکت مدل است
+            from .models import SieveSize
+            if isinstance(value, SieveSize):
+                return value.name
+        except Exception:
+            pass
+        # در غیر این صورت همان مقدار متنی را برگردان
+        return value
+    
+    class Meta:
+        model = models.AsphaltGradation
+        fields = ['sieve_size', 'passing_percentage']
+        widgets = {
+            'sieve_size': forms.TextInput(attrs={'class': 'form-control'}),
+            'passing_percentage': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+        } 
+
+class ExperimentResponseKilometerForm(forms.ModelForm):
+    class Meta:
+        model = models.ExperimentResponseKilometer
+        fields = ['start_kilometer', 'end_kilometer']
+
+class ExperimentResponseFileForm(forms.ModelForm):
+    class Meta:
+        model = models.ExperimentResponseFile
+        fields = ['file']
+
+ExperimentResponseKilometerFormSet = inlineformset_factory(
+    models.ExperimentResponse, models.ExperimentResponseKilometer,
+    form=ExperimentResponseKilometerForm, extra=1, can_delete=True
+)
+ExperimentResponseFileFormSet = inlineformset_factory(
+    models.ExperimentResponse, models.ExperimentResponseFile,
+    form=ExperimentResponseFileForm, extra=1, can_delete=True
+)
+
+# Formset برای آزمایش آسفالت
+AsphaltTestFormSet = inlineformset_factory(
+    models.ExperimentResponse, models.AsphaltTest,
+    form=AsphaltTestForm, extra=1, can_delete=True
+)
+
+# Formset برای دانه‌بندی آسفالت
+AsphaltGradationFormSet = inlineformset_factory(
+    models.AsphaltTest, models.AsphaltGradation,
+    form=AsphaltGradationForm, extra=1, can_delete=True
+) 
+
+class ExperimentRequestKilometerForm(forms.ModelForm):
+    class Meta:
+        model = models.ExperimentRequestKilometer
+        fields = ['start_kilometer', 'end_kilometer', 'description']
+
+class ExperimentRequestFileForm(forms.ModelForm):
+    class Meta:
+        model = models.ExperimentRequestFile
+        fields = ['file']
+
+ExperimentRequestKilometerFormSet = inlineformset_factory(
+    models.ExperimentRequest, models.ExperimentRequestKilometer,
+    form=ExperimentRequestKilometerForm, extra=1, can_delete=True
+)
+ExperimentRequestFileFormSet = inlineformset_factory(
+    models.ExperimentRequest, models.ExperimentRequestFile,
+    form=ExperimentRequestFileForm, extra=1, can_delete=True
+) 

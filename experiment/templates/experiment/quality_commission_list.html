@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}کمیسیون‌های کیفیت{% endblock %}
+
+{% block main %}
+<div class="container py-5">
+  <section class="quality-commissions mb-5">
+    <div class="page-toolbar">
+      <button type="button" class="btn btn-outline-secondary rounded-pill page-back-btn" onclick="history.back()">
+        <i class="bi bi-arrow-right me-2"></i>بازگشت
+      </button>
+      <div class="page-toolbar-actions">
+        <a href="{% url 'experiment:quality_commission_charts' %}" class="btn btn-outline-primary rounded-pill px-4">
+          <i class="bi bi-graph-up me-2"></i>نمودارها
+        </a>
+        <a href="{% url 'experiment:quality_commission_create' %}" class="btn btn-primary rounded-pill px-4">
+          <i class="bi bi-plus-circle me-2"></i>افزودن کمیسیون کیفیت
+        </a>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+          <div class="col-md-5">
+            <label class="form-label fw-bold">پروژه</label>
+            <select name="project" class="form-select">
+              <option value="">همه پروژه‌ها</option>
+              {% for project in projects %}
+                <option value="{{ project.id }}" {% if selected_project == project.id|stringformat:"s" %}selected{% endif %}>{{ project.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold">لایه</label>
+            <select name="layer" class="form-select">
+              <option value="">همه لایه‌ها</option>
+              {% for code, name in layers %}
+                <option value="{{ code }}" {% if selected_layer == code %}selected{% endif %}>{{ name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-fill">فیلتر</button>
+            <a href="{% url 'experiment:quality_commission_list' %}" class="btn btn-outline-secondary">پاکسازی</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">لیست کمیسیون‌های کیفیت</h6>
+        <span class="badge bg-light text-dark">{{ total_commissions }} مورد</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>پروژه</th>
+                <th>لایه</th>
+                <th>کمیسیون کیفیت</th>
+                <th>کیلومتر شروع</th>
+                <th>کیلومتر پایان</th>
+                <th>تاریخ محاسبه</th>
+                <th>عملیات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for commission in commissions %}
+                <tr>
+                  <td>{{ commission.project.name }}</td>
+                  <td>{{ commission.get_layer_display }}</td>
+                  <td><span class="badge bg-success">{{ commission.coefficient }}%</span></td>
+                  <td>{{ commission.start_kilometer }}</td>
+                  <td>{{ commission.end_kilometer }}</td>
+                  <td>{{ commission.calculation_date }}</td>
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      <a href="{% url 'experiment:quality_commission_update' commission.pk %}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                      <a href="{% url 'experiment:quality_commission_delete' commission.pk %}" class="btn btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="7" class="text-center py-5 text-muted">
+                    هیچ کمیسیون کیفیتی ثبت نشده است.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+      <nav class="mt-4" aria-label="صفحه‌بندی کمیسیون کیفیت">
+        <ul class="pagination justify-content-center">
+          {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">قبلی</a></li>
+          {% endif %}
+          <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+          {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">بعدی</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

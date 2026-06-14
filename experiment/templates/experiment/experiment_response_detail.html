@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}جزئیات پاسخ آزمایش{% endblock %}
+
+{% block main %}
+<div class="container-fluid py-4">
+    <div class="page-toolbar">
+        <button type="button" class="btn btn-outline-secondary rounded-pill page-back-btn" onclick="history.back()">
+            <i class="bi bi-arrow-right me-2"></i>بازگشت
+        </button>
+        <div class="page-toolbar-actions">
+            <a href="{% url 'experiment:experiment_response_list' %}" class="btn btn-outline-primary rounded-pill px-4">
+                <i class="bi bi-list"></i> لیست پاسخ‌ها
+            </a>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h3 class="card-title">جزئیات پاسخ آزمایش</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4>اطلاعات درخواست</h4>
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>پروژه</th>
+                                    <td>{{ experiment_response.experiment_request.project.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>لایه</th>
+                                    <td>{{ experiment_response.experiment_request.layer.layer_type.name|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>آزمایش</th>
+                                    <td>
+                                        {% for exp_type in experiment_response.experiment_request.experiment_type.all %}
+                                            {{ exp_type.name }}{% if not forloop.last %}، {% endif %}
+                                        {% empty %}
+                                            -
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>زیرگروه آزمایش</th>
+                                    <td>
+                                        {% for exp_subtype in experiment_response.experiment_request.experiment_subtype.all %}
+                                            {{ exp_subtype.name }}{% if not forloop.last %}، {% endif %}
+                                        {% empty %}
+                                            -
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>محل بتن‌ریزی</th>
+                                    <td>{{ experiment_response.experiment_request.concrete_place.name|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>تاریخ درخواست</th>
+                                    <td>{{ experiment_response.experiment_request.request_date|date:"Y/m/d" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h4>اطلاعات پاسخ</h4>
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>تاریخ پاسخ</th>
+                                    <td>{{ experiment_response.response_date|date:"Y/m/d" }}</td>
+                                </tr>
+                                {% comment %} تراکم نسبی {% endcomment %}
+                                {% if is_relative_density %}
+                                <tr>
+                                    <th>تراکم</th>
+                                    <td>{{ experiment_response.density_result|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>ضخامت</th>
+                                    <td>{{ experiment_response.thickness_result|default:"-" }}</td>
+                                </tr>
+                                {% endif %}
+
+                                {% comment %} مقاومت فشاری بتن و ملات {% endcomment %}
+                                {% if is_concrete_strength %}
+                                <tr>
+                                    <th>مقاومت 1</th>
+                                    <td>{{ experiment_response.strength_result1|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>مقاومت 2</th>
+                                    <td>{{ experiment_response.strength_result2|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>مقاومت 3</th>
+                                    <td>{{ experiment_response.strength_result3|default:"-" }}</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h4>توضیحات</h4>
+                            <p>{{ experiment_response.description|linebreaks|default:"-" }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if experiment_response.response_file %}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h4>فایل پاسخ</h4>
+                            <a href="{{ experiment_response.response_file.url }}" class="btn btn-primary" target="_blank" download>
+                                <i class="fas fa-download"></i> دانلود فایل
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- تاییدیه‌های پاسخ -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h4>تاییدیه‌های پاسخ</h4>
+                            <div class="mb-3">
+                                <h5>وضعیت تاییدیه نقش‌های کلیدی پروژه</h5>
+                                <table class="table table-bordered table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>نقش</th>
+                                            <th>وضعیت تایید</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for role, status in experiment_response.get_approval_status_by_role.items %}
+                                        <tr>
+                                            <td>{{ role }}</td>
+                                            <td>
+                                                {% if status == 'تایید شده' %}
+                                                    <span class="badge bg-success">تایید شده</span>
+                                                {% elif status == 'رد شده' %}
+                                                    <span class="badge bg-danger">رد شده</span>
+                                                {% elif status == 'در انتظار' %}
+                                                    <span class="badge bg-warning text-dark">در انتظار</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ status }}</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% if experiment_response.experimentapproval_set.all %}
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>تایید کننده</th>
+                                            <th>وضعیت</th>
+                                            <th>درصد جریمه</th>
+                                            <th>تاریخ تایید</th>
+                                            <th>توضیحات</th>
+                                            <th>عملیات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for approval in experiment_response.experimentapproval_set.all %}
+                                        <tr>
+                                            <td>{{ approval.approver.get_full_name }}</td>
+                                            <td>
+                                                {% if approval.status == 1 %}
+                                                    <span class="badge bg-success">تایید شده</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">رد شده</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if approval.penalty_percentage %}
+                                                    {{ approval.penalty_percentage }}%
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if approval.approval_date %}
+                                                    {{ approval.approval_date|date:"Y/m/d" }}
+                                                {% else %}
+                                                    {{ approval.created_at|date:"Y/m/d" }}
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ approval.description|default:"-" }}</td>
+                                            <td>
+                                                {% if approval.approver == user or user.is_superuser %}
+                                                    <a href="{% url 'experiment:experiment_approval_delete' approval.pk %}" class="btn btn-sm btn-danger" onclick="return confirm('آیا از حذف این تاییدیه اطمینان دارید؟')">
+                                                        <i class="fas fa-trash"></i> حذف
+                                                    </a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">
+                                هنوز تاییدیه‌ای برای این پاسخ ثبت نشده است.
+                            </div>
+                            {% endif %}
+
+                            <div class="mt-3">
+                                <a href="{% url 'experiment:experiment_approval_create' experiment_response.pk %}" class="btn btn-info">
+                                    <i class="fas fa-check"></i> ثبت تاییدیه
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if is_asphalt %}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h4>نتایج آزمایش آسفالت و دانه‌بندی</h4>
+                            {% if asphalt_tests %}
+                                {% for at in asphalt_tests %}
+                                    <div class="card mb-3">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <span>نوع لایه: <b>{{ at.get_layer_type_display }}</b></span>
+                                            <a href="{% url 'experiment:asphalt_gradation_manage' at.pk %}" class="btn btn-sm btn-outline-primary">
+                                                ویرایش دانه‌بندی
+                                            </a>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-3"><small class="text-muted">درصد قیر</small><div class="fw-bold">{{ at.bitumen_percentage|default:"-" }}</div></div>
+                                                <div class="col-md-3"><small class="text-muted">درصد شکستگی</small><div class="fw-bold">{{ at.fracture_percentage|default:"-" }}</div></div>
+                                                <div class="col-md-3"><small class="text-muted">دما</small><div class="fw-bold">{{ at.temperature|default:"-" }}</div></div>
+                                                <div class="col-md-3"><small class="text-muted">فضای خالی</small><div class="fw-bold">{{ at.air_void_percentage|default:"-" }}</div></div>
+                                                <div class="col-md-3 mt-2"><small class="text-muted">VMA</small><div class="fw-bold">{{ at.vma_percentage|default:"-" }}</div></div>
+                                                <div class="col-md-3 mt-2"><small class="text-muted">VFA</small><div class="fw-bold">{{ at.vfa_percentage|default:"-" }}</div></div>
+                                                <div class="col-md-3 mt-2"><small class="text-muted">نسبت فیلر به قیر</small><div class="fw-bold">{{ at.filler_to_bitumen_ratio|default:"-" }}</div></div>
+                                            </div>
+                                            <hr/>
+                                            <h6 class="mb-2">دانه‌بندی (الک‌ها)</h6>
+                                            {% if at.gradations.all %}
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-bordered">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>اندازه الک</th>
+                                                            <th>درصد عبوری</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for g in at.gradations.all %}
+                                                        <tr>
+                                                            <td>{{ g.sieve_size }}</td>
+                                                            <td>{{ g.passing_percentage|default:"-" }}</td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            {% else %}
+                                                <div class="alert alert-light border">دانه‌بندی ثبت نشده است.</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    هنوز آزمایش آسفالتی برای این پاسخ ثبت نشده است.
+                                    <a class="btn btn-sm btn-outline-secondary ms-2" href="{% url 'experiment:asphalt_test_create' experiment_response.pk %}">افزودن آزمایش آسفالت</a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <a href="{% url 'experiment:experiment_response_update' experiment_response.pk %}" class="btn btn-warning">
+                                <i class="fas fa-edit"></i> ویرایش
+                            </a>
+                            <a href="{% url 'experiment:experiment_response_delete' experiment_response.pk %}" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> حذف
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

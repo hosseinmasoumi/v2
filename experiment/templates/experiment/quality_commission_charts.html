@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}نمودارهای کمیسیون کیفیت{% endblock %}
+
+{% block head %}
+<script src="{% static 'js/chart.js' %}"></script>
+<style>
+  .bg-gradient { background: linear-gradient(135deg, #1976d2 0%, #43a047 100%) !important; }
+  .card { transition: all 0.3s ease; border: none; border-radius: 12px; margin-bottom: 16px; padding: 0.5rem; }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important; }
+  .card-header { background: linear-gradient(135deg, #1976d2 0%, #43a047 100%); color: white; border-radius: 12px 12px 0 0 !important; border: none; }
+  .chart-container { position: relative; height: 300px; margin: 20px 0; }
+</style>
+{% endblock %}
+
+{% block main %}
+<div class="container py-5">
+  <section class="dashboard-charts mb-5">
+    <div class="page-toolbar">
+      <button type="button" class="btn btn-outline-secondary rounded-pill page-back-btn" onclick="history.back()">
+        <i class="bi bi-arrow-right me-2"></i>بازگشت
+      </button>
+      <div class="page-toolbar-actions">
+        <a href="{% url 'experiment:quality_commission_create' %}" class="btn btn-primary rounded-pill px-4">
+          <i class="bi bi-plus-circle me-2"></i>افزودن کمیسیون کیفیت
+        </a>
+      </div>
+    </div>
+
+    <div class="card shadow-lg mb-4">
+      <div class="card-header text-center">
+        <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-2">
+          <h6 class="mb-0">
+            <i class="bi bi-graph-up me-2"></i>کمیسیون کیفیت بر اساس پروژه
+          </h6>
+          <span class="badge bg-light text-dark">تحلیل پروژه‌ها</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-4">
+            <h6 class="text-center mb-3">لایه خاکریزی</h6>
+            <div class="chart-container"><canvas id="embankmentProjectChart"></canvas></div>
+          </div>
+          <div class="col-md-6 mb-4">
+            <h6 class="text-center mb-3">لایه زیر اساس</h6>
+            <div class="chart-container"><canvas id="subbaseProjectChart"></canvas></div>
+          </div>
+          <div class="col-md-6 mb-4">
+            <h6 class="text-center mb-3">لایه اساس</h6>
+            <div class="chart-container"><canvas id="baseProjectChart"></canvas></div>
+          </div>
+          <div class="col-md-6 mb-4">
+            <h6 class="text-center mb-3">لایه آسفالت گرم</h6>
+            <div class="chart-container"><canvas id="asphaltProjectChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+  const lineChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 100,
+        ticks: {
+          callback: function(value) { return value + '%'; }
+        },
+        grid: { color: 'rgba(0,0,0,0.1)' }
+      },
+      x: { grid: { display: false } }
+    }
+  };
+
+  function createLineChart(canvasId, label, data, borderColor, backgroundColor) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: {{ project_labels|safe }},
+        datasets: [{
+          label: label,
+          data: data,
+          borderColor: borderColor,
+          backgroundColor: backgroundColor,
+          tension: 0.4,
+          borderWidth: 3,
+          pointBackgroundColor: borderColor,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 6
+        }]
+      },
+      options: lineChartOptions
+    });
+  }
+
+  createLineChart('embankmentProjectChart', 'کمیسیون کیفیت', {{ project_data_by_layer.EMBANKMENT|safe }}, 'rgba(156, 39, 176, 1)', 'rgba(156, 39, 176, 0.1)');
+  createLineChart('subbaseProjectChart', 'کمیسیون کیفیت', {{ project_data_by_layer.SUBBASE|safe }}, 'rgba(255, 152, 0, 1)', 'rgba(255, 152, 0, 0.1)');
+  createLineChart('baseProjectChart', 'کمیسیون کیفیت', {{ project_data_by_layer.BASE|safe }}, 'rgba(67, 160, 71, 1)', 'rgba(67, 160, 71, 0.1)');
+  createLineChart('asphaltProjectChart', 'کمیسیون کیفیت', {{ project_data_by_layer.ASPHALT|safe }}, 'rgba(25, 118, 210, 1)', 'rgba(25, 118, 210, 0.1)');
+</script>
+{% endblock %}

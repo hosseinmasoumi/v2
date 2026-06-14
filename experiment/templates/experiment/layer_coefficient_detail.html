@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}جزئیات ضریب پرداخت {{ layer_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="page-toolbar">
+        <button type="button" class="btn btn-outline-secondary rounded-pill page-back-btn" onclick="history.back()">
+            <i class="bi bi-arrow-right me-2"></i>بازگشت
+        </button>
+        <div class="page-toolbar-actions">
+            <a href="{% url 'experiment:dashboard_charts' %}" class="btn btn-outline-primary rounded-pill px-4">بازگشت به داشبورد</a>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h4 class="mb-0">جزئیات ضریب پرداخت {{ layer_name }}</h4>
+                </div>
+                <div class="card-body">
+                    {% if coefficients %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>پروژه</th>
+                                        <th>ضریب پرداخت</th>
+                                        <th>کیلومتراژ شروع</th>
+                                        <th>کیلومتراژ پایان</th>
+                                        <th>تاریخ محاسبه</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for coefficient in coefficients %}
+                                    <tr>
+                                        <td>{{ coefficient.project.name }}</td>
+                                        <td>
+                                            <span class="badge bg-primary fs-6">
+                                                {{ coefficient.coefficient }}
+                                            </span>
+                                        </td>
+                                        <td>{{ coefficient.start_kilometer }}</td>
+                                        <td>{{ coefficient.end_kilometer }}</td>
+                                        <td>{{ coefficient.calculation_date }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- آمار کلی -->
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body text-center">
+                                        <h5>تعداد کل</h5>
+                                        <h3>{{ coefficients.count }}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <h5 class="text-muted">هیچ ضریب پرداختی برای این لایه یافت نشد.</h5>
+                            <a href="{% url 'experiment:payment_coefficient_create' %}" class="btn btn-primary mt-3">افزودن ضریب پرداخت</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

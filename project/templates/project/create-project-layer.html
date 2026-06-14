@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+ایجاد لایه پروژه
+{% if project %}
+- {{ object.name }}
+{% endif %}
+{% endblock title %}
+
+{% block head %}
+<style>
+    .layer-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .layer-title {
+        color: #2c3e50;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #3498db;
+    }
+    .form-label {
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    .help-text {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+    .layer-table {
+        margin-top: 30px;
+    }
+    .layer-table th {
+        background-color: #f8f9fa;
+        font-weight: 500;
+    }
+    .state-badge {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.85rem;
+    }
+    .state-variable {
+        background-color: #e3f2fd;
+        color: #1976d2;
+    }
+    .state-fixed {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+    }
+</style>
+{% endblock %}
+
+{% block main %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-9">
+            <div class="card shadow-lg rounded-5 border-0 bg-light">
+                <div class="card-body p-4">
+                    <h4 class="card-title mb-4 text-center fw-bold text-primary">ایجاد لایه پروژه</h4>
+
+                    {# نمایش پیام خطا در صورت وجود non_field_errors #}
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger text-center rounded-4 shadow-sm fw-bold" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        {{ form.non_field_errors|striptags }}
+                    </div>
+                    {% endif %}
+
+                    {# --- نمایش لایه‌های قبلی به صورت کارت جمع‌وجور --- #}
+                    {% if previous_layers and previous_layers|length > 0 %}
+                    <div class="mb-4">
+                        <h5 class="mb-3 fw-bold text-success">لایه‌های قبلی این پروژه:</h5>
+                        <div class="row g-2">
+                            {% for layer in previous_layers %}
+                            <div class="col-12 col-sm-6 col-lg-4">
+                                <div class="card h-100 shadow-sm rounded-4 border-0 bg-white position-relative small p-2"
+                                     style="min-height: 120px;">
+                                    <div class="card-body py-2 px-2 d-flex flex-column justify-content-between">
+                                        <div>
+                                            <div class="fw-bold text-info mb-1">
+                                                <i class="fas fa-layer-group me-1"></i> {{ layer.display_name|default:layer.layer_type }}
+                                            </div>
+                                            <div class="mb-1">
+                                                <span class="badge bg-secondary">ضخامت: {{ layer.thickness_cm }} سانتی‌متر</span>
+                                                <span class="badge bg-secondary">ترتیب: {{ layer.order_from_top }}</span>
+                                            </div>
+                                            <span class="badge {% if layer.state == 0 %}bg-info text-dark{% else %}bg-success{% endif %} me-1">
+                                                {{ layer.get_state_display }}
+                                            </span>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-success btn-sm w-100 mt-2 fw-bold copy-layer-btn rounded-3"
+                                            data-layer_type="{{ layer.layer_type.id }}"
+                                            data-thickness_cm="{{ layer.thickness_cm }}"
+                                            data-state="{{ layer.state }}">
+                                            <i class="fas fa-copy me-1"></i> استفاده از این لایه
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <form method="post" novalidate class="bg-white rounded-4 shadow-sm p-4 mb-4">
+                        {% csrf_token %}
+                        <div class="layer-card bg-white border-0 p-0">
+                            <h5 class="layer-title mb-3">
+                                <i class="fas fa-layer-group me-2"></i>
+                                اطلاعات لایه
+                            </h5>
+                            <div class="row g-3">
+                                {% for field in form %}
+                                    {% if field.name != 'project' %}
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">{{ field.label }}</label>
+                                            {{ field }}
+                                            {% if field.help_text %}
+                                                <div class="help-text text-muted small">{{ field.help_text }}</div>
+                                            {% endif %}
+                                            {% if field.errors %}
+                                                <div class="text-danger small fw-bold">
+                                                    <i class="fas fa-exclamation-circle me-1"></i>
+                                                    {{ field.errors|striptags }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-6">
+                                <button type="submit" class="btn btn-primary w-100 py-2 fs-5 rounded-3 fw-bold">
+                                    <i class="fas fa-save me-2"></i>
+                                    ایجاد لایه
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <a class="btn btn-outline-primary w-100 py-2 fs-5 rounded-3 fw-bold" href="{% url 'create-project-structure' pk=project.pk %}">
+                                    <i class="fas fa-arrow-right me-2"></i>
+                                    مرحله بعد
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="text-center my-4">
+    <button type="button" class="btn btn-secondary btn-lg rounded-4 px-5 fw-bold" onclick="window.history.back();">
+        <i class="fas fa-arrow-right"></i> بازگشت
+    </button>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const inputs = document.querySelectorAll("form input, form select, form textarea");
+        inputs.forEach(input => input.classList.add("form-control"));
+
+        // کپی اطلاعات لایه قبلی به فرم
+        document.querySelectorAll('.copy-layer-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                // مقداردهی فیلدها
+                document.getElementById('id_layer_type').value = btn.getAttribute('data-layer_type');
+                document.getElementById('id_thickness_cm').value = btn.getAttribute('data-thickness_cm');
+                document.getElementById('id_state').value = btn.getAttribute('data-state');
+                // ترتیب را خالی بگذار تا کاربر وارد کند
+                document.getElementById('id_order_from_top').value = '';
+            });
+        });
+    });
+</script>
+{% endblock main %}

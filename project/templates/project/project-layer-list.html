@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+
+{% block title %}
+لیست لایه های پروژه
+{% endblock title %}
+
+{% block main %}
+<div class="container py-5">
+  <div class="page-toolbar">
+    <button type="button" class="btn btn-outline-secondary rounded-pill page-back-btn" onclick="history.back()">
+      <i class="bi bi-arrow-right me-2"></i>بازگشت
+    </button>
+    <div class="page-toolbar-actions">
+      <a class="btn btn-light text-primary fw-bold" href="{% url 'create-project-layer' pk=project.pk %}"><i class="fas fa-plus"></i> ایجاد لایه</a>
+    </div>
+  </div>
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-10">
+      <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+        <div class="card-header bg-gradient text-white text-center">
+          <h4 class="fw-bold mb-0">لیست لایه‌های پروژه {{ project.name }}</h4>
+        </div>
+        <div class="card-body">
+          {# جدول خلاصه استفاده از لایه‌ها #}
+          {% if layer_type_summary %}
+          <div class="table-responsive mb-4">
+            <table class="table table-bordered table-sm text-center align-middle small">
+              <thead class="table-light">
+                <tr>
+                  <th>نام لایه</th>
+                  <th>تعداد استفاده</th>
+                  <th>ترتیب‌های استفاده شده</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for lt, info in layer_type_summary.items %}
+                <tr>
+                  <td class="fw-bold">{{ lt }}</td>
+                  <td>{{ info.count }}</td>
+                  <td>
+                    {% for order in info.orders %}
+                      <span class="badge bg-secondary mx-1">{{ order }}</span>
+                    {% endfor %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+          <div class="row g-3">
+            {% if project_layers %}
+              {% for layer in project_layers %}
+              <div class="col-12 col-sm-6 col-lg-4">
+                <div class="card h-100 shadow-sm rounded-4 border-0 bg-white layer-card-hover position-relative">
+                  <div class="card-body py-3 px-3 d-flex flex-column justify-content-between">
+                    <div>
+                      <div class="fw-bold text-info mb-1 fs-5">
+                        <i class="fas fa-layer-group me-1"></i> {{ layer.display_name|default:layer.layer_type.name }}
+                      </div>
+                      <div class="mb-2">
+                        <span class="badge bg-secondary">ترتیب: {{ layer.order_from_top }}</span>
+                        <span class="badge bg-secondary">ضخامت: {{ layer.thickness_cm }} سانتی‌متر</span>
+                      </div>
+                      <div class="mb-2">
+                        <span class="badge {% if layer.state == 0 %}bg-info text-dark{% else %}bg-success{% endif %}">
+                          {{ layer.get_state_display }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-2">
+                      <a class="btn btn-sm btn-outline-secondary rounded-3 px-3" href="{% url 'project-layer-detail' pk=layer.pk %}"><i class="fas fa-info me-1"></i> جزئیات</a>
+                      <a class="btn btn-sm btn-outline-warning rounded-3 px-3" href="{% url 'project-layer-update' pk=layer.pk %}"><i class="fas fa-edit me-1"></i> ویرایش</a>
+                      <a class="btn btn-sm btn-outline-danger rounded-3 px-3" href="{% url 'project-layer-delete' pk=layer.pk %}"><i class="fas fa-trash me-1"></i> حذف</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+            <div class="col-12">
+              <div class="alert alert-warning text-center">لایه‌ای برای این پروژه ثبت نشده است.</div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+.bg-gradient {
+  background: linear-gradient(135deg, #1976d2 0%, #43a047 100%) !important;
+}
+.layer-card-hover {
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.layer-card-hover:hover {
+  box-shadow: 0 8px 32px rgba(25, 118, 210, 0.18);
+  transform: translateY(-4px) scale(1.03);
+}
+</style>
+{% endblock %}

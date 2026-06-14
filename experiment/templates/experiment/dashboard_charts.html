@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}نمودارهای ضریب پرداخت{% endblock %}
+
+{% block head %}
+<script src="{% static 'js/chart.js' %}"></script>
+<style>
+  .bg-gradient {
+    background: linear-gradient(135deg, #1976d2 0%, #43a047 100%) !important;
+  }
+  .card {
+    transition: all 0.3s ease;
+    border: none;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    padding: 0.5rem 0.5rem;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important;
+  }
+  .card-header {
+    background: linear-gradient(135deg, #1976d2 0%, #43a047 100%);
+    color: white;
+    border-radius: 12px 12px 0 0 !important;
+    border: none;
+  }
+  .chart-container {
+    position: relative;
+    height: 260px;
+    margin: 20px 0;
+  }
+  .stats-card {
+    background: linear-gradient(135deg, #1976d2 0%, #43a047 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+  }
+  .stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+  }
+  .stats-number {
+    font-size: 2rem;
+    font-weight: bold;
+  }
+  .stats-icon {
+    font-size: 2.5rem;
+    opacity: 0.8;
+  }
+</style>
+{% endblock %}
+
+{% block main %}
+<div class="container py-5">
+  <section class="dashboard-charts mb-5">
+    <div class="page-toolbar">
+      <button type="button" class="btn btn-outline-secondary rounded-pill page-back-btn" onclick="history.back()">
+        <i class="bi bi-arrow-right me-2"></i>بازگشت
+      </button>
+      <div class="page-toolbar-actions">
+        <a href="{% url 'experiment:payment_coefficient_list' %}" class="btn btn-outline-primary rounded-pill px-4">
+          <i class="bi bi-list me-2"></i>لیست ضرایب
+        </a>
+      </div>
+    </div>
+    
+
+    <!-- نمودارهای ضرایب بر اساس پروژه برای هر لایه -->
+    <div class="card shadow-lg mb-4">
+      <div class="card-header text-center">
+        <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-2">
+          <h6 class="mb-0">
+            <i class="bi bi-graph-up me-2"></i>ضرایب پرداخت بر اساس پروژه
+          </h6>
+          <span class="badge bg-light text-dark">تحلیل پروژه‌ها</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-4">
+            <h6 class="text-center mb-3">لایه خاکریزی</h6>
+            <div class="chart-container" style="height: 300px;">
+              <canvas id="embankmentProjectChart"></canvas>
+            </div>
+          </div>
+          <div class="col-md-6 mb-4">
+            <h6 class="text-center mb-3">لایه زیر اساس</h6>
+            <div class="chart-container" style="height: 300px;">
+              <canvas id="subbaseProjectChart"></canvas>
+            </div>
+          </div>
+          <div class="col-md-6 mb-4">
+            <h6 class="text-center mb-3">لایه اساس</h6>
+            <div class="chart-container" style="height: 300px;">
+              <canvas id="baseProjectChart"></canvas>
+            </div>
+          </div>
+          <div class="col-md-6 mb-4">
+            <h6 class="text-center mb-3">لایه آسفالت گرم</h6>
+            <div class="chart-container" style="height: 300px;">
+              <canvas id="asphaltProjectChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+  // نمودارهای ضرایب بر اساس پروژه برای هر لایه
+  const lineChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 1.2,
+        grid: {
+          color: 'rgba(0,0,0,0.1)'
+        }
+      },
+      x: {
+        grid: {
+          display: false
+        }
+      }
+    }
+  };
+
+  // نمودار لایه خاکریزی
+  const ctxEmbankment = document.getElementById('embankmentProjectChart');
+  if (ctxEmbankment) {
+    new Chart(ctxEmbankment, {
+      type: 'line',
+      data: {
+        labels: {{ project_labels|safe }},
+        datasets: [{
+          label: 'ضریب پرداخت',
+          data: {{ project_data_by_layer.EMBANKMENT|safe }},
+          borderColor: 'rgba(156, 39, 176, 1)',
+          backgroundColor: 'rgba(156, 39, 176, 0.1)',
+          tension: 0.4,
+          borderWidth: 3,
+          pointBackgroundColor: 'rgba(156, 39, 176, 1)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 6
+        }]
+      },
+      options: lineChartOptions
+    });
+  }
+
+  // نمودار لایه زیر اساس
+  const ctxSubbase = document.getElementById('subbaseProjectChart');
+  if (ctxSubbase) {
+    new Chart(ctxSubbase, {
+      type: 'line',
+      data: {
+        labels: {{ project_labels|safe }},
+        datasets: [{
+          label: 'ضریب پرداخت',
+          data: {{ project_data_by_layer.SUBBASE|safe }},
+          borderColor: 'rgba(255, 152, 0, 1)',
+          backgroundColor: 'rgba(255, 152, 0, 0.1)',
+          tension: 0.4,
+          borderWidth: 3,
+          pointBackgroundColor: 'rgba(255, 152, 0, 1)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 6
+        }]
+      },
+      options: lineChartOptions
+    });
+  }
+
+  // نمودار لایه اساس
+  const ctxBase = document.getElementById('baseProjectChart');
+  if (ctxBase) {
+    new Chart(ctxBase, {
+      type: 'line',
+      data: {
+        labels: {{ project_labels|safe }},
+        datasets: [{
+          label: 'ضریب پرداخت',
+          data: {{ project_data_by_layer.BASE|safe }},
+          borderColor: 'rgba(67, 160, 71, 1)',
+          backgroundColor: 'rgba(67, 160, 71, 0.1)',
+          tension: 0.4,
+          borderWidth: 3,
+          pointBackgroundColor: 'rgba(67, 160, 71, 1)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 6
+        }]
+      },
+      options: lineChartOptions
+    });
+  }
+
+  // نمودار لایه آسفالت گرم
+  const ctxAsphalt = document.getElementById('asphaltProjectChart');
+  if (ctxAsphalt) {
+    new Chart(ctxAsphalt, {
+      type: 'line',
+      data: {
+        labels: {{ project_labels|safe }},
+        datasets: [{
+          label: 'ضریب پرداخت',
+          data: {{ project_data_by_layer.ASPHALT|safe }},
+          borderColor: 'rgba(25, 118, 210, 1)',
+          backgroundColor: 'rgba(25, 118, 210, 0.1)',
+          tension: 0.4,
+          borderWidth: 3,
+          pointBackgroundColor: 'rgba(25, 118, 210, 1)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 6
+        }]
+      },
+      options: lineChartOptions
+    });
+  }
+</script>
+{% endblock %} 
