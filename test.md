@@ -1,1 +1,0 @@
-Kilometer validation test notes
